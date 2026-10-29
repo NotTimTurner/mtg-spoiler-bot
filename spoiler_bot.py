@@ -66,7 +66,12 @@ def watched_sets():
 
 
 def cards_in_set(code):
-    q = urllib.parse.urlencode({"q": f"e:{code}", "unique": "prints", "order": "spoiled", "dir": "asc"})
+    # include_extras: brand-new previews often aren't tagged as paper cards yet,
+    # and Scryfall's default search hides them until they are.
+    q = urllib.parse.urlencode({
+        "q": f"e:{code}", "unique": "prints", "order": "spoiled", "dir": "asc",
+        "include_extras": "true", "include_variations": "true",
+    })
     url = f"{SCRYFALL}/cards/search?{q}"
     cards = []
     while url:
