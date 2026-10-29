@@ -29,6 +29,9 @@ STATE_FILE = Path(__file__).with_name("seen.json")
 GRACE_DAYS = 7
 SKIP_SET_TYPES = {"token", "memorabilia", "minigame"}
 SKIP_REPRINTS_IN = {"commander"}  # in these set types, only post brand-new cards
+# Sets that never "release" because new drops keep being added to them (Secret Lair).
+# These are always watched, but only cards dated within the window are checked.
+ALWAYS_WATCH = {"sld"}
 MAX_POSTS = int(os.environ.get("MAX_POSTS", "60"))
 DRY_RUN = os.environ.get("DRY_RUN") == "1"
 WEBHOOK = os.environ.get("DISCORD_WEBHOOK_URL", "")
@@ -60,17 +63,23 @@ def watched_sets():
     sets = scryfall(f"{SCRYFALL}/sets")["data"]
     return [
         s for s in sets
-        if s.get("released_at", "0000") >= cutoff
-        and s.get("set_type") not in SKIP_SET_TYPES
-        and not s.get("digital")
+        if s["code"] in ALWAYS_WATCH or (
+            s.get("released_at", "0000") >= cutoff
+            and s.get("set_type") not in SKIP_SET_TYPES
+            and not s.get("digital")
+        )
     ]
 
 
 def cards_in_set(code):
+    query = f"e:{code}"
+    if code in ALWAYS_WATCH:
+        cutoff = (date.today() - timedelta(days=GRACE_DAYS)).isoformat()
+        query += f" date>={cutoff}"
     # include_extras: brand-new previews often aren't tagged as paper cards yet,
     # and Scryfall's default search hides them until they are.
     q = urllib.parse.urlencode({
-        "q": f"e:{code}", "unique": "prints", "order": "spoiled", "dir": "asc",
+        "q": query, "unique": "prints", "order": "spoiled", "dir": "asc",
         "include_extras": "true", "include_variations": "true",
     })
     url = f"{SCRYFALL}/cards/search?{q}"
