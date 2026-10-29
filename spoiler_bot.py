@@ -28,6 +28,7 @@ HEADERS = {"User-Agent": "MTGSpoilerDiscordBot/1.0", "Accept": "application/json
 STATE_FILE = Path(__file__).with_name("seen.json")
 GRACE_DAYS = 7
 SKIP_SET_TYPES = {"token", "memorabilia", "minigame"}
+SKIP_REPRINTS_IN = {"commander"}  # in these set types, only post brand-new cards
 MAX_POSTS = int(os.environ.get("MAX_POSTS", "60"))
 DRY_RUN = os.environ.get("DRY_RUN") == "1"
 WEBHOOK = os.environ.get("DISCORD_WEBHOOK_URL", "")
@@ -148,8 +149,11 @@ def main():
         already = set(seen.get(code, []))
         new_seen[code] = list(already)
         for card in cards_in_set(code):
-            if card["id"] not in already:
-                new.append((code, card, s["name"]))
+            if card["id"] in already:
+                continue
+            if s.get("set_type") in SKIP_REPRINTS_IN and card.get("reprint"):
+                continue
+            new.append((code, card, s["name"]))
 
     if first_run:
         for code, card, _ in new:
