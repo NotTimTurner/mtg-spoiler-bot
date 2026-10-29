@@ -2,11 +2,11 @@ name: MTG Spoilers
 
 on:
   schedule:
-    - cron: "*/20 * * * *"   # every 20 minutes (GitHub may delay runs a bit)
-  workflow_dispatch:          # lets you run it manually from the Actions tab
+    - cron: "7,27,47 * * * *"   # every 20 minutes, offset from the busy top of the hour
+  workflow_dispatch:             # lets you run it manually from the Actions tab
 
 permissions:
-  contents: write             # needed to save seen.json back to the repo
+  contents: write                # needed to save seen.json back to the repo
 
 concurrency:
   group: spoilers
@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main              # always use the latest repo state, even on re-runs
 
       - name: Post new spoilers
         env:
