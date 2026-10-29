@@ -1,0 +1,31 @@
+name: MTG Spoilers
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"   # every 20 minutes (GitHub may delay runs a bit)
+  workflow_dispatch:          # lets you run it manually from the Actions tab
+
+permissions:
+  contents: write             # needed to save seen.json back to the repo
+
+concurrency:
+  group: spoilers
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Post new spoilers
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python3 spoiler_bot.py
+
+      - name: Save seen cards
+        run: |
+          git config user.name "spoiler-bot"
+          git config user.email "spoiler-bot@users.noreply.github.com"
+          git add seen.json
+          git diff --cached --quiet || (git commit -m "Update seen cards" && git push)
