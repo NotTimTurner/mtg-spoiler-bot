@@ -82,6 +82,30 @@ def cards_in_set(code):
     return cards
 
 
+def oracle_id(card):
+    return card.get("oracle_id") or (card.get("card_faces") or [{}])[0].get("oracle_id")
+
+
+def older_printings(oracle_ids, released_at):
+    """Return the oracle IDs that were printed in any set released before `released_at`.
+
+    Scryfall's `reprint` flag is often wrong for brand-new previews, so we check
+    for earlier printings directly.
+    """
+    found = set()
+    ids = [o for o in oracle_ids if o]
+    for i in range(0, len(ids), 20):
+        chunk = ids[i:i + 20]
+        query = f"date<{released_at} (" + " or ".join(f"oracleid:{o}" for o in chunk) + ")"
+        params = urllib.parse.urlencode({"q": query, "unique": "cards", "include_extras": "true"})
+        url = f"{SCRYFALL}/cards/search?{params}"
+        while url:
+            page = scryfall(url)
+            found.update(oracle_id(c) for c in page.get("data", []))
+            url = page.get("next_page") if page.get("has_more") else None
+    return found
+
+
 def card_text(face):
     lines = [f"**{face.get('type_line', '')}**"]
     if face.get("oracle_text"):
@@ -148,12 +172,15 @@ def main():
         code = s["code"]
         already = set(seen.get(code, []))
         new_seen[code] = list(already)
-        for card in cards_in_set(code):
-            if card["id"] in already:
-                continue
-            if s.get("set_type") in SKIP_REPRINTS_IN and card.get("reprint"):
-                continue
-            new.append((code, card, s["name"]))
+        fresh = [c for c in cards_in_set(code) if c["id"] not in already]
+        if s.get("set_type") in SKIP_REPRINTS_IN and fresh:
+            old = older_printings({oracle_id(c) for c in fresh}, s["released_at"])
+            reprints = [c for c in fresh if c.get("reprint") or oracle_id(c) in old]
+            new_seen[code].extend(c["id"] for c in reprints)  # skip them for good
+            fresh = [c for c in fresh if c not in reprints]
+            if reprints:
+                print(f"{code.upper()}: skipped {len(reprints)} reprints")
+        new.extend((code, c, s["name"]) for c in fresh)
 
     if first_run:
         for code, card, _ in new:
