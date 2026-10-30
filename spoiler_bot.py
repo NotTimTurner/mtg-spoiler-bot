@@ -52,12 +52,18 @@ def scryfall(url):
     time.sleep(0.1)  # Scryfall asks for 50-100 ms between requests
     # Scryfall's CDN can serve the same URL from cache for hours, so make each run's URL unique.
     url += ("&" if "?" in url else "?") + f"_={int(time.time())}"
-    try:
-        return http_json(url)
-    except urllib.error.HTTPError as e:
-        if e.code == 404:  # search with no results
-            return {"data": [], "has_more": False}
-        raise
+    for attempt in range(4):  # retry brief network hiccups and Scryfall server errors
+        try:
+            return http_json(url)
+        except urllib.error.HTTPError as e:
+            if e.code == 404:  # search with no results
+                return {"data": [], "has_more": False}
+            if e.code not in (429, 500, 502, 503, 504) or attempt == 3:
+                raise
+        except (urllib.error.URLError, ConnectionError, TimeoutError):
+            if attempt == 3:
+                raise
+        time.sleep(2 * (attempt + 1))
 
 
 def watched_sets():
