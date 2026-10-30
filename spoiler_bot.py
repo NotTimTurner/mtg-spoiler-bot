@@ -50,6 +50,8 @@ def http_json(url, data=None, headers=None):
 
 def scryfall(url):
     time.sleep(0.1)  # Scryfall asks for 50-100 ms between requests
+    # Scryfall's CDN can serve the same URL from cache for hours, so make each run's URL unique.
+    url += ("&" if "?" in url else "?") + f"_={int(time.time())}"
     try:
         return http_json(url)
     except urllib.error.HTTPError as e:
