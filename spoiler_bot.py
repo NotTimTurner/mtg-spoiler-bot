@@ -123,6 +123,10 @@ def older_printings(oracle_ids, released_at):
     return found
 
 
+def is_extended(card):
+    return "extendedart" in (card.get("frame_effects") or [])
+
+
 def card_text(face):
     lines = [f"**{face.get('type_line', '')}**"]
     if face.get("oracle_text"):
@@ -185,11 +189,14 @@ def main():
 
     new = []  # (set_code, card, set_name)
     new_seen = {}
+    shown = set()  # oracle IDs of cards already posted (any version)
     for s in sets:
         code = s["code"]
         already = set(seen.get(code, []))
         new_seen[code] = list(already)
-        fresh = [c for c in cards_in_set(code) if c["id"] not in already]
+        cards = cards_in_set(code)
+        shown.update(oracle_id(c) for c in cards if c["id"] in already)
+        fresh = [c for c in cards if c["id"] not in already]
         if s.get("set_type") in SKIP_REPRINTS_IN and fresh:
             old = older_printings({oracle_id(c) for c in fresh}, s["released_at"])
             reprints = [c for c in fresh if c.get("reprint") or oracle_id(c) in old]
@@ -198,6 +205,15 @@ def main():
             if reprints:
                 print(f"{code.upper()}: skipped {len(reprints)} reprints")
         new.extend((code, c, s["name"]) for c in fresh)
+
+    # Extended-art versions only post if no other version of that card has been shown.
+    regular = {oracle_id(c) for _, c, _ in new if not is_extended(c)}
+    dupes = [x for x in new if is_extended(x[1]) and oracle_id(x[1]) in (shown | regular)]
+    for code, card, _ in dupes:
+        new_seen[code].append(card["id"])
+    new = [x for x in new if x not in dupes]
+    if dupes:
+        print(f"Skipped {len(dupes)} extended-art versions of cards already shown")
 
     if first_run:
         for code, card, _ in new:
