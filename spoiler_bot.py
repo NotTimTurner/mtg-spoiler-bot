@@ -13,10 +13,8 @@ Env vars:
   DRY_RUN=1            print what would be posted instead of posting
   MAX_POSTS            max cards per run (default 60; the rest go next run)
 """
-import base64
 import json
 import os
-import re
 import sys
 import time
 import urllib.error
@@ -37,11 +35,6 @@ ALWAYS_WATCH = {"sld"}
 MAX_POSTS = int(os.environ.get("MAX_POSTS", "60"))
 DRY_RUN = os.environ.get("DRY_RUN") == "1"
 WEBHOOK = os.environ.get("DISCORD_WEBHOOK_URL", "")
-# Early alerts from r/magicTCG posts flaired "Spoiler". A Reddit app login is optional;
-# add it if Reddit blocks GitHub's servers.
-REDDIT_SUB = "magicTCG"
-REDDIT_ID = os.environ.get("REDDIT_CLIENT_ID", "")
-REDDIT_SECRET = os.environ.get("REDDIT_CLIENT_SECRET", "")
 
 # Discord embed colors by card color
 COLORS = {"W": 0xF8F6D8, "U": 0x0E68AB, "B": 0x150B00, "R": 0xD3202A, "G": 0x00733E}
@@ -156,83 +149,6 @@ def to_embed(card, set_name):
     return embed
 
 
-def reddit_listing():
-    """Newest posts from r/magicTCG (uses a Reddit app login if one is configured)."""
-    ua = {"User-Agent": "script:mtg-spoiler-discord-bot:1.0"}
-    if REDDIT_ID and REDDIT_SECRET:
-        auth = base64.b64encode(f"{REDDIT_ID}:{REDDIT_SECRET}".encode()).decode()
-        token = http_json(
-            "https://www.reddit.com/api/v1/access_token",
-            data=b"grant_type=client_credentials",
-            headers={**ua, "Authorization": f"Basic {auth}",
-                     "Content-Type": "application/x-www-form-urlencoded"},
-        )["access_token"]
-        url = f"https://oauth.reddit.com/r/{REDDIT_SUB}/new?limit=100&raw_json=1"
-        headers = {**ua, "Authorization": f"Bearer {token}"}
-    else:
-        url = f"https://www.reddit.com/r/{REDDIT_SUB}/new.json?limit=100&raw_json=1"
-        headers = ua
-    return [c["data"] for c in http_json(url, headers=headers)["data"]["children"]]
-
-
-def reddit_image(p):
-    if p.get("is_gallery"):
-        items = (p.get("gallery_data") or {}).get("items") or []
-        meta = p.get("media_metadata") or {}
-        if items and items[0].get("media_id") in meta:
-            return (meta[items[0]["media_id"]].get("s") or {}).get("u")
-    link = p.get("url_overridden_by_dest") or p.get("url") or ""
-    if re.search(r"\.(jpe?g|png|webp|gif)$", link.split("?")[0], re.I):
-        return link
-    images = (p.get("preview") or {}).get("images") or []
-    return images[0]["source"]["url"] if images else None
-
-
-def reddit_embed(p):
-    link = p.get("url_overridden_by_dest") or ""
-    embed = {
-        "title": ("🔔 " + p["title"])[:256],
-        "url": "https://www.reddit.com" + p["permalink"],
-        "color": 0xFF4500,
-        "footer": {"text": f"r/{REDDIT_SUB} · early spoiler alert (full card follows once Scryfall adds it)"},
-    }
-    if link and "reddit.com" not in link and "redd.it" not in link:
-        embed["description"] = f"Source: {link}"[:4000]
-    image = reddit_image(p)
-    if image:
-        embed["image"] = {"url": image}
-    return embed
-
-
-def reddit_alerts(seen, new_seen, first_run):
-    """Post new Spoiler-flaired r/magicTCG posts. Never lets a Reddit problem stop the Scryfall part."""
-    previous = seen.get("_reddit")
-    new_seen["_reddit"] = list(previous or [])
-    try:
-        posts = [p for p in reddit_listing()
-                 if "spoiler" in (p.get("link_flair_text") or "").lower() and not p.get("stickied")]
-    except Exception as e:  # noqa: BLE001
-        print(f"Reddit check failed ({e}); skipping Reddit this run.")
-        return
-    known = set(new_seen["_reddit"])
-    fresh = [p for p in reversed(posts) if p["id"] not in known]  # oldest first
-    if first_run or previous is None:
-        new_seen["_reddit"].extend(p["id"] for p in fresh)
-        print(f"Reddit: first check, recorded {len(fresh)} existing spoiler posts, posted nothing.")
-    else:
-        print(f"Reddit: {len(fresh)} new spoiler posts.")
-        for i in range(0, len(fresh), 10):
-            batch = fresh[i:i + 10]
-            if DRY_RUN:
-                for p in batch:
-                    print(" - [reddit]", p["title"])
-            else:
-                post_embeds([reddit_embed(p) for p in batch])
-                time.sleep(2)
-            new_seen["_reddit"].extend(p["id"] for p in batch)
-    new_seen["_reddit"] = new_seen["_reddit"][-500:]  # keep the file small
-
-
 def post_embeds(embeds):
     payload = json.dumps({"username": "MTG Spoilers", "embeds": embeds}).encode()
     headers = {"Content-Type": "application/json", "User-Agent": HEADERS["User-Agent"]}
@@ -256,13 +172,11 @@ def main():
     first_run = not STATE_FILE.exists()
     seen = {} if first_run else json.loads(STATE_FILE.read_text())
 
-    new_seen = {}
-    reddit_alerts(seen, new_seen, first_run)  # fast alerts first
-
     sets = watched_sets()
     print(f"Watching {len(sets)} sets: {', '.join(s['code'].upper() for s in sets)}")
 
     new = []  # (set_code, card, set_name)
+    new_seen = {}
     for s in sets:
         code = s["code"]
         already = set(seen.get(code, []))
