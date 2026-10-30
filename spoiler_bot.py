@@ -11,7 +11,7 @@ MTG Spoiler Bot: posts newly spoiled cards from Scryfall to a Discord webhook.
 Env vars:
   DISCORD_WEBHOOK_URL  required (unless DRY_RUN=1)
   DRY_RUN=1            print what would be posted instead of posting
-  MAX_POSTS            max cards per run (default 60; the rest go next run)
+  MAX_POSTS            max cards per run (default 15; the rest go next run)
 """
 import json
 import os
@@ -32,7 +32,7 @@ SKIP_REPRINTS_IN = {"commander"}  # in these set types, only post brand-new card
 # Sets that never "release" because new drops keep being added to them (Secret Lair).
 # These are always watched, but only cards dated within the window are checked.
 ALWAYS_WATCH = {"sld"}
-MAX_POSTS = int(os.environ.get("MAX_POSTS", "60"))
+MAX_POSTS = int(os.environ.get("MAX_POSTS", "15"))
 DRY_RUN = os.environ.get("DRY_RUN") == "1"
 WEBHOOK = os.environ.get("DISCORD_WEBHOOK_URL", "")
 
