@@ -123,6 +123,17 @@ def older_printings(oracle_ids, released_at):
     return found
 
 
+def has_real_image(card):
+    """False while Scryfall only has its "Card image coming right up!" placeholder.
+
+    Those cards are left out of seen.json so a later run posts them once the art is up.
+    """
+    if card.get("image_status") in ("missing", "placeholder"):
+        return False
+    faces = card.get("card_faces") or [card]
+    return bool((card.get("image_uris") or faces[0].get("image_uris") or {}).get("normal"))
+
+
 def is_extended(card):
     return "extendedart" in (card.get("frame_effects") or [])
 
@@ -205,6 +216,13 @@ def main():
             if reprints:
                 print(f"{code.upper()}: skipped {len(reprints)} reprints")
         new.extend((code, c, s["name"]) for c in fresh)
+
+    # Cards with no real image yet aren't marked seen, so they're picked up on a later run.
+    waiting = [x for x in new if not has_real_image(x[1])]
+    new = [x for x in new if has_real_image(x[1])]
+    if waiting:
+        print(f"Waiting on images for {len(waiting)} cards: "
+              + ", ".join(f"{c['name']} ({code.upper()})" for code, c, _ in waiting[:10]))
 
     # Extended-art versions only post if no other version of that card has been shown.
     regular = {oracle_id(c) for _, c, _ in new if not is_extended(c)}
