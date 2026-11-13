@@ -134,8 +134,18 @@ def has_real_image(card):
     return bool((card.get("image_uris") or faces[0].get("image_uris") or {}).get("normal"))
 
 
-def is_extended(card):
-    return "extendedart" in (card.get("frame_effects") or [])
+ALT_FRAME_EFFECTS = {"extendedart", "showcase", "inverted", "etched", "shatteredglass", "fullart"}
+
+
+def is_alt_art(card):
+    """Collector-booster style versions: extended, borderless, showcase, full art, etc."""
+    return bool(
+        ALT_FRAME_EFFECTS & set(card.get("frame_effects") or [])
+        or card.get("border_color") == "borderless"
+        or card.get("full_art")
+        or card.get("variation")
+        or "boosterfun" in (card.get("promo_types") or [])
+    )
 
 
 def card_text(face):
@@ -224,14 +234,37 @@ def main():
         print(f"Waiting on images for {len(waiting)} cards: "
               + ", ".join(f"{c['name']} ({code.upper()})" for code, c, _ in waiting[:10]))
 
-    # Extended-art versions only post if no other version of that card has been shown.
-    regular = {oracle_id(c) for _, c, _ in new if not is_extended(c)}
-    dupes = [x for x in new if is_extended(x[1]) and oracle_id(x[1]) in (shown | regular)]
+    # One post per card. Fresh previews carry no frame data (alt arts look like plain
+    # black-border cards), so the lowest collector number wins and every other version
+    # of that card -- borderless, showcase, extended, etc. -- is skipped.
+    def rank(card):
+        num = "".join(ch for ch in card.get("collector_number", "") if ch.isdigit())
+        return (is_alt_art(card), int(num or 10**6))
+
+    best = {}  # oracle id -> best version among cards posting now or waiting on an image
+    for _, c, _ in new + waiting:
+        oid = oracle_id(c)
+        if oid not in best or rank(c) < rank(best[oid]):
+            best[oid] = c
+    keep, dupes, held = [], [], []
+    for x in new:
+        oid = oracle_id(x[1])
+        if oid in shown:
+            dupes.append(x)
+        elif best[oid] is x[1]:
+            keep.append(x)
+        elif any(best[oid] is w[1] for w in waiting):
+            held.append(x)  # wait for the regular version's image, then post that one
+        else:
+            dupes.append(x)
     for code, card, _ in dupes:
         new_seen[code].append(card["id"])
-    new = [x for x in new if x not in dupes]
+    new = keep
     if dupes:
-        print(f"Skipped {len(dupes)} extended-art versions of cards already shown")
+        print(f"Skipped {len(dupes)} alternate versions of cards: "
+              + ", ".join(f"{c['name']} #{c.get('collector_number')}" for _, c, _ in dupes[:10]))
+    if held:
+        print(f"Holding {len(held)} alternate versions until the regular card has an image")
 
     if first_run:
         for code, card, _ in new:
