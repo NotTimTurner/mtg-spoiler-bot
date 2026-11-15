@@ -30,9 +30,10 @@ GRACE_DAYS = 7
 SKIP_SET_TYPES = {"token", "memorabilia", "minigame"}
 SKIP_REPRINTS_IN = {"commander"}  # in these set types, only post brand-new cards
 # Sets that never "release" because new drops keep being added to them (Secret Lair,
-# and Secret Lair Promo, where RCQ / Regional Championship promos are added).
+# Secret Lair Promo, where RCQ / Regional Championship promos are added, and
+# Spotlight Series promos).
 # These are always watched, but only cards dated within the window are checked.
-ALWAYS_WATCH = {"sld", "slp"}
+ALWAYS_WATCH = {"sld", "slp", "pspl"}
 MAX_POSTS = int(os.environ.get("MAX_POSTS", "15"))
 DRY_RUN = os.environ.get("DRY_RUN") == "1"
 WEBHOOK = os.environ.get("DISCORD_WEBHOOK_URL", "")
