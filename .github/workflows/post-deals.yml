@@ -1,0 +1,60 @@
+name: Post Sealed Deals
+
+# Triggered by Tim's daily sealed-deal check (a Claude scheduled task) through the
+# workflow-dispatch API. It can also be run by hand from the Actions tab.
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: "Deal summary to post (Discord markdown)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post to #sealed-deals
+        env:
+          WEBHOOK: ${{ secrets.DEALS_DISCORD_WEBHOOK_URL }}
+          MESSAGE: ${{ inputs.message }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, time, urllib.request
+
+          webhook = os.environ["WEBHOOK"]
+          text = os.environ["MESSAGE"].replace("\\n", "\n").strip()
+          if not webhook:
+              raise SystemExit("DEALS_DISCORD_WEBHOOK_URL secret is not set")
+          if not text:
+              raise SystemExit("Empty message; nothing to post")
+
+          # Discord allows 2000 characters per message; split on line breaks.
+          chunks, cur = [], ""
+          for line in text.split("\n"):
+              while len(line) > 1900:
+                  chunks.append(line[:1900]); line = line[1900:]
+              if len(cur) + len(line) + 1 > 1900:
+                  chunks.append(cur); cur = ""
+              cur += line + "\n"
+          if cur.strip():
+              chunks.append(cur)
+
+          for chunk in chunks:
+              body = json.dumps({
+                  "content": chunk,
+                  "username": "Sealed Deals",
+                  "allowed_mentions": {"parse": []},  # never ping anyone
+                  "flags": 4,                         # no link previews
+              }).encode()
+              req = urllib.request.Request(webhook, data=body, headers={
+                  "Content-Type": "application/json",
+                  "User-Agent": "DiscordBot (https://github.com/NotTimTurner/mtg-spoiler-bot, 1.0)",
+              })
+              urllib.request.urlopen(req, timeout=30).read()
+              time.sleep(1)
+          print(f"Posted {len(chunks)} message(s)")
+          EOF
