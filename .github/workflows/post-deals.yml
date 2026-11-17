@@ -2,11 +2,17 @@ name: Post Sealed Deals
 
 # Triggered by Tim's daily sealed-deal check (a Claude scheduled task) through the
 # workflow-dispatch API. It can also be run by hand from the Actions tab.
+#
+# Posts each deal as its own post in the #deals forum on the NotTimTurner server.
+# Input "deals" is a JSON list, for example:
+#   [{"title": "Hobbit Play Booster Box: $99 at Amazon (21% under TCG low)",
+#     "body": "Details...\nhttps://link", "tag": "sealed"}]
+# tag: sealed | secret_lair | singles | arena  (optional; defaults to sealed)
 on:
   workflow_dispatch:
     inputs:
-      message:
-        description: "Deal summary to post (Discord markdown)"
+      deals:
+        description: "JSON list of deals: [{title, body, tag}]"
         required: true
         type: string
 
@@ -17,44 +23,62 @@ jobs:
   post:
     runs-on: ubuntu-latest
     steps:
-      - name: Post to #sealed-deals
+      - name: Post to the deals forum
         env:
           WEBHOOK: ${{ secrets.DEALS_DISCORD_WEBHOOK_URL }}
-          MESSAGE: ${{ inputs.message }}
+          DEALS: ${{ inputs.deals }}
         run: |
           python3 - <<'EOF'
           import json, os, time, urllib.request
 
+          # Forum tag IDs in the #deals forum
+          TAGS = {
+              "sealed": "1572361864002666497",
+              "singles": "1572361892813475982",
+              "secret_lair": "1572361916251377806",
+              "arena": "1572361945103990885",
+          }
           webhook = os.environ["WEBHOOK"]
-          text = os.environ["MESSAGE"].replace("\\n", "\n").strip()
           if not webhook:
               raise SystemExit("DEALS_DISCORD_WEBHOOK_URL secret is not set")
-          if not text:
-              raise SystemExit("Empty message; nothing to post")
+          deals = json.loads(os.environ["DEALS"])
+          if isinstance(deals, dict):
+              deals = [deals]
 
-          # Discord allows 2000 characters per message; split on line breaks.
-          chunks, cur = [], ""
-          for line in text.split("\n"):
-              while len(line) > 1900:
-                  chunks.append(line[:1900]); line = line[1900:]
-              if len(cur) + len(line) + 1 > 1900:
-                  chunks.append(cur); cur = ""
-              cur += line + "\n"
-          if cur.strip():
-              chunks.append(cur)
+          def post(payload, query=""):
+              req = urllib.request.Request(
+                  webhook + "?wait=true" + query,
+                  data=json.dumps(payload).encode(),
+                  headers={
+                      "Content-Type": "application/json",
+                      "User-Agent": "DiscordBot (https://github.com/NotTimTurner/mtg-spoiler-bot, 1.0)",
+                  })
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return json.load(r)
 
-          for chunk in chunks:
-              body = json.dumps({
-                  "content": chunk,
-                  "username": "Sealed Deals",
-                  "allowed_mentions": {"parse": []},  # never ping anyone
-                  "flags": 4,                         # no link previews
-              }).encode()
-              req = urllib.request.Request(webhook, data=body, headers={
-                  "Content-Type": "application/json",
-                  "User-Agent": "DiscordBot (https://github.com/NotTimTurner/mtg-spoiler-bot, 1.0)",
-              })
-              urllib.request.urlopen(req, timeout=30).read()
-              time.sleep(1)
-          print(f"Posted {len(chunks)} message(s)")
+          def chunks(text):
+              out, cur = [], ""
+              for line in text.split("\n"):
+                  while len(line) > 1900:
+                      out.append(line[:1900]); line = line[1900:]
+                  if len(cur) + len(line) + 1 > 1900:
+                      out.append(cur); cur = ""
+                  cur += line + "\n"
+              if cur.strip():
+                  out.append(cur)
+              return out or ["(no details)"]
+
+          for d in deals:
+              title = (d.get("title") or "Deal").strip()[:100]
+              body = (d.get("body") or title).replace("\\n", "\n").strip()
+              tag = TAGS.get((d.get("tag") or "sealed").lower().replace(" ", "_"), TAGS["sealed"])
+              parts = chunks(body)
+              base = {"username": "Sealed Deals", "allowed_mentions": {"parse": []}}
+              msg = post({**base, "content": parts[0], "thread_name": title,
+                          "applied_tags": [tag]})
+              for part in parts[1:]:
+                  time.sleep(1)
+                  post({**base, "content": part}, f"&thread_id={msg['channel_id']}")
+              print("Posted:", title)
+              time.sleep(2)
           EOF
