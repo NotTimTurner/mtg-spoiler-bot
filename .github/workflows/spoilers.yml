@@ -31,10 +31,36 @@ jobs:
           DEALS_DISCORD_WEBHOOK_URL: ${{ secrets.DEALS_DISCORD_WEBHOOK_URL }}
         run: python3 deals_bot.py
 
+      - name: Post Pokémon GO events
+        continue-on-error: true
+        env:
+          POKEMON_GO_WEBHOOK_URL: ${{ secrets.POKEMON_GO_WEBHOOK_URL }}
+        run: python3 pogo_bot.py
+
+      - name: Post free games
+        continue-on-error: true
+        env:
+          FREE_GAMES_WEBHOOK_URL: ${{ secrets.FREE_GAMES_WEBHOOK_URL }}
+        run: python3 free_games_bot.py
+
+      - name: Post new trophies
+        continue-on-error: true
+        env:
+          PSN_NPSSO: ${{ secrets.PSN_NPSSO }}
+          TROPHIES_WEBHOOK_URL: ${{ secrets.TROPHIES_WEBHOOK_URL }}
+        run: |
+          if [ -n "$PSN_NPSSO" ] && [ -n "$TROPHIES_WEBHOOK_URL" ]; then
+            npm install --no-save --no-package-lock --silent psn-api@2 && node trophies_bot.mjs
+          else
+            echo "PSN_NPSSO or TROPHIES_WEBHOOK_URL not set; skipping trophies"
+          fi
+
       - name: Save seen cards
         run: |
           git config user.name "spoiler-bot"
           git config user.email "spoiler-bot@users.noreply.github.com"
           git add seen.json
-          if [ -f posted_deals.json ]; then git add posted_deals.json; fi
+          for f in posted_deals.json pogo_seen.json free_games_seen.json trophies_state.json; do
+            if [ -f "$f" ]; then git add "$f"; fi
+          done
           git diff --cached --quiet || (git commit -m "Update seen cards" && git push)
