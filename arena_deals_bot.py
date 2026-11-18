@@ -15,14 +15,17 @@ Env vars:
   DEALS_DISCORD_WEBHOOK_URL  webhook in the #deals forum (same one deals_bot.py uses)
   DRY_RUN=1                  print instead of posting
 """
+import html
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ACTOR = "mtgadailydeals.com"
 FEED_URL = ("https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?"
@@ -32,6 +35,8 @@ ARENA_TAG = "1572361945103990885"   # "Arena" tag in the #deals forum
 THREAD_FILE = Path(__file__).with_name("arena_thread.txt")
 DEFAULT_THREAD = "1572653988241739797"  # "Arena Daily Deals" post in #deals
 THREAD_NAME = "Arena Daily Deals"
+MTG_ROLE = "1224726052044275795"   # @Member-MTG: pinged when Gold or Gems are on sale
+SITE_DAY = "https://mtgadailydeals.com/day/{}"
 MAX_AGE = timedelta(days=2)
 MAX_POSTS = 3
 UA = "DiscordBot (https://github.com/NotTimTurner/mtg-spoiler-bot, 1.0)"
@@ -75,6 +80,32 @@ def post(payload, image=None, query=""):
                                  headers={"Content-Type": ctype, "User-Agent": UA})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
+
+
+def currency_deals(text, day):
+    """Gold/Gems bundles on sale that day, e.g. ["550 Gold (10 gems, was 100)"].
+    Uses the full list on mtgadailydeals.com (the Bluesky text cuts off with "+2 more"),
+    and falls back to the Bluesky text if the site can't be read."""
+    found = []
+    try:
+        page = download(SITE_DAY.format(day))[0].decode("utf-8", "replace")
+        for chunk in page.split("<li")[1:]:
+            m = re.search(r'card/(\d+)-(gold|gems)"', chunk)
+            if not m:
+                continue
+            words = html.unescape(re.sub(r"<[^>]+>", " ", chunk))
+            words = re.sub(r"\s+", " ", words)
+            item = f"{m.group(1)} {m.group(2).title()}"
+            price = re.search(r"Gems\s*([\d,]+)\s*was\s*([\d,]+)", words)
+            if price:
+                item += f" ({price.group(1)} gems, was {price.group(2)})"
+            found.append(item)
+    except Exception as e:
+        print(f"Couldn't read the deals site: {e}")
+    if not found:
+        found = [f"{n} {w.title()}" for n, w in
+                 re.findall(r"(?<![\w,])(\d[\d,]*)\s+(gold|gems)\b", text, re.I)]
+    return list(dict.fromkeys(found))
 
 
 def main():
@@ -122,10 +153,18 @@ def main():
                 image = download(images[0]["fullsize"])
             except Exception as e:
                 print(f"Couldn't download the deals image: {e}")
+        day = created.astimezone(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+        currency = currency_deals(text, day)
+        if currency:
+            base_extra = {"content": f"<@&{MTG_ROLE}> 💰 Gold/Gems deal today: " + ", ".join(currency),
+                          "allowed_mentions": {"roles": [MTG_ROLE]}}
+            print("Gold/Gems on sale:", ", ".join(currency))
+        else:
+            base_extra = {}
         thread_id = (THREAD_FILE.read_text().strip() if THREAD_FILE.exists() else "") or DEFAULT_THREAD
-        base = {"username": "Arena Daily Deals", "allowed_mentions": {"parse": []}}
+        base = {"username": "Arena Daily Deals", "allowed_mentions": {"parse": []}, **base_extra}
         if DRY_RUN:
-            print(json.dumps({"thread_id": thread_id, "embed": embed,
+            print(json.dumps({"thread_id": thread_id, "content": base.get("content"), "embed": embed,
                               "image_bytes": len(image[0]) if image else 0}, indent=1))
         else:
             try:
