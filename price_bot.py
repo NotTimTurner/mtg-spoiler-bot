@@ -44,13 +44,27 @@ def get(url):
     return urllib.request.urlopen(req, timeout=300)
 
 
+def iter_cards(meta):
+    """Yield card objects from Scryfall's bulk file (new gzipped JSON Lines, or the old JSON array)."""
+    url = meta.get("jsonl_download_uri")
+    if url:
+        print(f"Downloading {url} ({meta.get('compressed_size', 0) // 1_000_000} MB compressed)")
+        with get(url) as r, gzip.open(r, "rt", encoding="utf-8") as lines:
+            for line in lines:
+                line = line.strip()
+                if line:
+                    yield json.loads(line)
+        return
+    url = meta["download_uri"]
+    print(f"Downloading {url} ({meta.get('size', 0) // 1_000_000} MB)")
+    with get(url) as r:
+        yield from json.load(r)
+
+
 def snapshot():
     meta = json.load(get("https://api.scryfall.com/bulk-data/default-cards"))
-    print(f"Downloading {meta['download_uri']} ({meta.get('size', 0) // 1_000_000} MB)")
-    with get(meta["download_uri"]) as r:
-        cards = json.load(r)
     snap = {}
-    for c in cards:
+    for c in iter_cards(meta):
         if c.get("digital") or c.get("lang") != "en" or "paper" not in c.get("games", []):
             continue
         p = c.get("prices") or {}
