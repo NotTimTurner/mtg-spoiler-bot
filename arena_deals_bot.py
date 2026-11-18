@@ -37,11 +37,35 @@ def get_json(url):
         return json.load(r)
 
 
-def post(payload):
-    req = urllib.request.Request(
-        WEBHOOK + "?wait=true", data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json", "User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=30) as r:
+def download(url):
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return r.read(), r.headers.get_content_type()
+
+
+def post(payload, image=None):
+    """Post to the webhook. image = (bytes, content_type) is uploaded as an attachment,
+    which Discord shows reliably (it won't render cdn.bsky.app links in embeds)."""
+    if not image:
+        data, ctype = json.dumps(payload).encode(), "application/json"
+    else:
+        body, itype = image
+        ext = {"image/png": "png", "image/webp": "webp"}.get(itype, "jpg")
+        name = f"arena-deals.{ext}"
+        payload["embeds"][0]["image"] = {"url": f"attachment://{name}"}
+        payload["attachments"] = [{"id": 0, "filename": name}]
+        b = "----arenadeals" + str(int(time.time() * 1000))
+        parts = [
+            f'--{b}\r\nContent-Disposition: form-data; name="payload_json"\r\n'
+            f"Content-Type: application/json\r\n\r\n".encode() + json.dumps(payload).encode() + b"\r\n",
+            f'--{b}\r\nContent-Disposition: form-data; name="files[0]"; filename="{name}"\r\n'
+            f"Content-Type: {itype}\r\n\r\n".encode() + body + b"\r\n",
+            f"--{b}--\r\n".encode(),
+        ]
+        data, ctype = b"".join(parts), f"multipart/form-data; boundary={b}"
+    req = urllib.request.Request(WEBHOOK + "?wait=true", data=data,
+                                 headers={"Content-Type": ctype, "User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
 
 
@@ -84,15 +108,19 @@ def main():
             "footer": {"text": f"@{ACTOR} on Bluesky"},
             "timestamp": created.isoformat(),
         }
+        image = None
         if images:
-            embed["image"] = {"url": images[0]["fullsize"]}
+            try:
+                image = download(images[0]["fullsize"])
+            except Exception as e:
+                print(f"Couldn't download the deals image: {e}")
         local = created.astimezone(timezone(timedelta(hours=-5)))
         thread = f"Arena Daily Deals - {local.strftime('%a %b')} {local.day}"
         if DRY_RUN:
-            print(json.dumps({"thread_name": thread, "embed": embed}, indent=1))
+            print(json.dumps({"thread_name": thread, "embed": embed, "image_bytes": len(image[0]) if image else 0}, indent=1))
         else:
             post({"username": "Arena Daily Deals", "allowed_mentions": {"parse": []},
-                  "thread_name": thread, "applied_tags": [ARENA_TAG], "embeds": [embed]})
+                  "thread_name": thread, "applied_tags": [ARENA_TAG], "embeds": [embed]}, image)
             print("Posted:", thread)
         seen.append(p["uri"])
         time.sleep(2)
