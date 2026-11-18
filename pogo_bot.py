@@ -15,6 +15,7 @@ Env vars:
 """
 import json
 import os
+import re
 import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -23,6 +24,12 @@ from zoneinfo import ZoneInfo
 
 DATA_URL = "https://raw.githubusercontent.com/bigfoott/ScrapedDuck/data/events.min.json"
 STATE_FILE = Path(__file__).with_name("pogo_seen.json")
+MISSING_FILE = Path(__file__).with_name("missing_shinies.json")
+# Hyphenated species names (so "jangmo-o" isn't read as a form of "jangmo")
+HYPHENATED = {"jangmo-o", "hakamo-o", "kommo-o", "type-null", "tapu-bulu", "tapu-fini",
+              "tapu-lele", "tapu-koko", "porygon-z", "ho-oh", "mr-mime", "mr-rime", "mime-jr",
+              "nidoran-m", "nidoran-f", "iron-boulder", "iron-crown", "iron-leaves",
+              "walking-wake", "raging-bolt", "gouging-fire", "great-tusk", "roaring-moon"}
 LOOKAHEAD_DAYS = 7
 MAX_POSTS = 8
 SKIP_TYPES = {"go-battle-league", "season", "go-pass"}
@@ -90,6 +97,59 @@ def details(e):
     return lines
 
 
+def load_missing():
+    try:
+        return json.loads(MISSING_FILE.read_text())["missing"]
+    except Exception:
+        return []
+
+
+def slugify(name):
+    n = name.lower()
+    n = re.sub(r"\(.*?\)", "", n)
+    for word in ("shadow ", "mega ", "dynamax ", "gigantamax ", "primal ", "alolan ", "galarian ",
+                 "hisuian ", "paldean "):
+        n = n.replace(word, "")
+    n = n.replace("♀", "-f").replace("♂", "-m").replace(".", "").replace("'", "").replace("é", "e")
+    return re.sub(r"[^a-z0-9]+", "-", n).strip("-")
+
+
+def species(slug):
+    for h in HYPHENATED:
+        if slug == h or slug.startswith(h + "-"):
+            return h
+    return slug.split("-")[0]
+
+
+def missing_shinies(e, missing):
+    """Missing-shiny slugs that this event could help with."""
+    if not missing:
+        return []
+    x = e.get("extraData") or {}
+    names = [s["name"] for s in (x.get("communityday") or {}).get("spawns", [])]
+    sp = x.get("spotlight") or {}
+    names += [m["name"] for m in (sp.get("list") or ([sp] if sp else []))]
+    rb = x.get("raidbattles") or {}
+    names += [b["name"] for b in rb.get("bosses", [])] + [b["name"] for b in rb.get("shinies", [])]
+    wanted = {species(slugify(n)) for n in names if n}
+    raw = e.get("name", "").lower().replace("♂", " m ").replace("♀", " f ")
+    title = " " + re.sub(r"[^a-z0-9]+", " ", raw) + " "
+    hits = []
+    for m in missing:
+        sp_name = species(m)
+        if sp_name in wanted or f" {sp_name.replace('-', ' ')} " in title:
+            hits.append(m)
+    return hits
+
+
+def pretty(slug):
+    sp_name = species(slug)
+    base = {"type-null": "Type: Null", "nidoran-m": "Nidoran♂", "nidoran-f": "Nidoran♀"}.get(
+        sp_name, sp_name.title())
+    form = slug[len(sp_name):].strip("-").replace("-", " ")
+    return f"{base} ({form})" if form else base
+
+
 def post(payload):
     req = urllib.request.Request(
         WEBHOOK, data=json.dumps(payload).encode(),
@@ -103,6 +163,7 @@ def main():
         return
     seen = json.loads(STATE_FILE.read_text()) if STATE_FILE.exists() else []
     seen_set = set(seen)
+    missing = load_missing()
     req = urllib.request.Request(f"{DATA_URL}?_={int(time.time())}", headers={"User-Agent": UA})
     events = json.load(urllib.request.urlopen(req, timeout=30))
     now = datetime.now(ET)
@@ -122,6 +183,10 @@ def main():
     count = 0
     for start, e in due[:MAX_POSTS]:
         lines = [f"**{e.get('heading') or 'Event'}** · {when(e)}"] + details(e)
+        hits = missing_shinies(e, missing)
+        if hits:
+            shown = ", ".join(pretty(h) for h in hits[:8]) + (f" +{len(hits) - 8} more" if len(hits) > 8 else "")
+            lines.insert(1, f"🎯 **Shiny missing from Tim's dex:** {shown}")
         embed = {
             "title": e["name"][:256], "url": e.get("link"),
             "description": "\n".join(lines)[:4000],
