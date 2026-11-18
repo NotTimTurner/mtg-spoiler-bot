@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write                # needed to save seen.json back to the repo
+  actions: read                  # lets the failure alert look at recent runs
 
 concurrency:
   group: spoilers
@@ -29,6 +30,7 @@ jobs:
         continue-on-error: true      # deals problems never block spoilers
         env:
           DEALS_DISCORD_WEBHOOK_URL: ${{ secrets.DEALS_DISCORD_WEBHOOK_URL }}
+          TOURNAMENTS_WEBHOOK_URL: ${{ secrets.TOURNAMENTS_WEBHOOK_URL }}
         run: python3 deals_bot.py
 
       - name: Post Pokémon GO events
@@ -48,12 +50,33 @@ jobs:
         env:
           PSN_NPSSO: ${{ secrets.PSN_NPSSO }}
           TROPHIES_WEBHOOK_URL: ${{ secrets.TROPHIES_WEBHOOK_URL }}
+          RECAP_WEBHOOK_URL: ${{ secrets.FREE_GAMES_WEBHOOK_URL }}   # weekly recap goes to #gaming
         run: |
           if [ -n "$PSN_NPSSO" ] && [ -n "$TROPHIES_WEBHOOK_URL" ]; then
             npm install --no-save --no-package-lock --silent psn-api@2 && node trophies_bot.mjs
           else
             echo "PSN_NPSSO or TROPHIES_WEBHOOK_URL not set; skipping trophies"
           fi
+
+      - name: Restore price history
+        uses: actions/cache/restore@v4
+        with:
+          path: price_history
+          key: prices-${{ github.run_id }}
+          restore-keys: prices-
+
+      - name: Post price alerts
+        continue-on-error: true
+        env:
+          PRICE_ALERTS_WEBHOOK_URL: ${{ secrets.PRICE_ALERTS_WEBHOOK_URL }}
+        run: python3 price_bot.py
+
+      - name: Save price history
+        if: hashFiles('price_history/UPDATED') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: price_history
+          key: prices-${{ github.run_id }}
 
       - name: Save seen cards
         run: |
@@ -64,3 +87,23 @@ jobs:
             if [ -f "$f" ]; then git add "$f"; fi
           done
           git diff --cached --quiet || (git commit -m "Update seen cards" && git push)
+
+      - name: Alert after 3 failed runs in a row
+        if: failure()
+        env:
+          HEALTH_WEBHOOK_URL: ${{ secrets.HEALTH_WEBHOOK_URL }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$HEALTH_WEBHOOK_URL" ]; then echo "HEALTH_WEBHOOK_URL not set"; exit 0; fi
+          # This run is still in progress, so look at the last completed runs:
+          # alert only when the previous two failed and the one before that didn't,
+          # i.e. this is exactly the third failure in a row (no repeat alerts).
+          set -- $(gh run list -R "$GITHUB_REPOSITORY" -w spoilers.yml -s completed -L 3 --json conclusion -q '.[].conclusion')
+          if [ "$1" = failure ] && [ "$2" = failure ] && [ "$3" != failure ]; then
+            url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            curl -sS -H "Content-Type: application/json" \
+              -d "{\"username\":\"Bot Health\",\"content\":\"MTG Spoilers bot has failed 3 runs in a row. Latest run: $url\"}" \
+              "$HEALTH_WEBHOOK_URL"
+          else
+            echo "Not the third failure in a row; no alert"
+          fi
