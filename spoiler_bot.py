@@ -56,11 +56,22 @@ def http_json(url, data=None, headers=None):
         return json.loads(body) if body else None
 
 
+_last_request = 0.0
+
+
 def scryfall(url):
-    time.sleep(0.1)  # Scryfall asks for 50-100 ms between requests
+    # Scryfall rate limits: about 2 requests/second for /cards/search (and /cards/named,
+    # /cards/collection), 10/second for everything else. Going over returns 429 and a
+    # roughly 30-second penalty, so keep a steady gap between requests.
+    global _last_request
+    gap = 0.6 if "/cards/" in url else 0.15
+    wait = _last_request + gap - time.time()
+    if wait > 0:
+        time.sleep(wait)
     # Scryfall's CDN can serve the same URL from cache for hours, so make each run's URL unique.
     url += ("&" if "?" in url else "?") + f"_={int(time.time())}"
     for attempt in range(4):  # retry brief network hiccups and Scryfall server errors
+        _last_request = time.time()
         try:
             return http_json(url)
         except urllib.error.HTTPError as e:
@@ -68,6 +79,12 @@ def scryfall(url):
                 return {"data": [], "has_more": False}
             if e.code not in (429, 500, 502, 503, 504) or attempt == 3:
                 raise
+            if e.code == 429:  # rate limited: wait out the penalty before retrying
+                retry = e.headers.get("Retry-After") if e.headers else None
+                delay = float(retry) if retry and retry.replace(".", "", 1).isdigit() else 30
+                print(f"Scryfall rate limit hit; waiting {delay:.0f}s")
+                time.sleep(delay + 1)
+                continue
         except (urllib.error.URLError, ConnectionError, TimeoutError):
             if attempt == 3:
                 raise
