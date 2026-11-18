@@ -80,6 +80,7 @@ async function main() {
   const changed = trophyTitles.filter((t) => new Date(t.lastUpdatedDateTime) > since);
   console.log(`Trophies: ${changed.length} game(s) with new trophies since ${state.lastCheck}`);
   let count = 0;
+  let lastTrophy = state.lastTrophy || null;
   for (const t of changed.reverse()) {
     const opts = { npServiceName: t.npServiceName };
     const earned = await getUserTrophiesEarnedForTitle(auth, "me", t.npCommunicationId, "all", opts);
@@ -118,13 +119,71 @@ async function main() {
       await sleep(1500);
     }
     count += fresh.length;
+    const newest = fresh[fresh.length - 1];
+    lastTrophy = { game: t.trophyTitleName, name: (byId.get(newest.trophyId) || {}).trophyName || "Trophy",
+      type: newest.trophyType, at: newest.earnedDateTime };
     for (const x of fresh) week.push({ game: t.trophyTitleName, type: x.trophyType, at: x.earnedDateTime });
   }
   const recapDate = await weeklyRecap(week, state.lastRecap);
+  let nowPlaying = { id: state.nowPlayingId, sig: state.nowPlayingSig };
+  try {
+    nowPlaying = await updateNowPlaying(trophyTitles, lastTrophy, nowPlaying);
+  } catch (e) {
+    console.log(`Now Playing card error: ${e.message}`);
+  }
   const cutoff = Date.now() - 8 * 864e5;
   saveState({ lastCheck: runStart, authWarned: false, lastRecap: recapDate || state.lastRecap,
-    week: week.filter((w) => new Date(w.at).getTime() > cutoff) });
+    week: week.filter((w) => new Date(w.at).getTime() > cutoff), lastTrophy,
+    nowPlayingId: nowPlaying.id, nowPlayingSig: nowPlaying.sig });
   console.log(`${count} trophy(s) posted`);
+}
+
+// "Now Playing" card in #trophies: one message the bot keeps editing (Tim pins it).
+// Shows the most recently played game and its trophy count, like Tim's
+// nickname "Final fantasy Resonance[14/40]" (bots can't change the owner's nickname).
+async function updateNowPlaying(titles, lastTrophy, prev) {
+  const t = [...titles].sort((a, b) => new Date(b.lastUpdatedDateTime) - new Date(a.lastUpdatedDateTime))[0];
+  if (!t) return prev;
+  const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+  const earned = sum(t.earnedTrophies), total = sum(t.definedTrophies);
+  const e = t.earnedTrophies, d = t.definedTrophies;
+  const plat = d.platinum ? (e.platinum ? "🏆 Platinum earned!" : "Platinum not yet") : "No platinum in this game";
+  const lines = [
+    `**${earned}/${total}** trophies · **${t.progress}%**`,
+    `🥇 ${e.gold}/${d.gold}  🥈 ${e.silver}/${d.silver}  🥉 ${e.bronze}/${d.bronze}`,
+    plat,
+  ];
+  if (lastTrophy && lastTrophy.game === t.trophyTitleName) {
+    lines.push(`Latest: **${lastTrophy.name}** (${lastTrophy.type}) <t:${Math.floor(new Date(lastTrophy.at) / 1000)}:R>`);
+  }
+  const sig = `${t.npCommunicationId}|${earned}|${t.progress}|${lastTrophy ? lastTrophy.at : ""}`;
+  if (prev.id && prev.sig === sig) return prev;          // nothing changed
+  const payload = {
+    username: "Trophies", allowed_mentions: { parse: [] },
+    embeds: [{
+      author: { name: "🎮 Tim is playing" },
+      title: `${t.trophyTitleName} [${earned}/${total}]`,
+      description: lines.join("\n"),
+      thumbnail: t.trophyTitleIconUrl ? { url: t.trophyTitleIconUrl } : undefined,
+      color: e.platinum ? 0x8fb8de : 0x5865f2,
+      footer: { text: "Updates automatically" },
+      timestamp: t.lastUpdatedDateTime,
+    }],
+  };
+  const headers = { "Content-Type": "application/json", "User-Agent": UA };
+  if (prev.id) {
+    const res = await fetch(`${WEBHOOK}/messages/${prev.id}`, { method: "PATCH", headers, body: JSON.stringify(payload) });
+    if (res.ok) {
+      console.log(`Now Playing card updated: ${t.trophyTitleName} [${earned}/${total}]`);
+      return { id: prev.id, sig };
+    }
+    console.log(`Couldn't edit the Now Playing card (${res.status}); posting a new one`);
+  }
+  const res = await fetch(`${WEBHOOK}?wait=true`, { method: "POST", headers, body: JSON.stringify(payload) });
+  if (!res.ok) throw new Error(`Discord ${res.status}: ${await res.text()}`);
+  const msg = await res.json();
+  console.log(`Now Playing card posted (message ${msg.id}); pin it in #trophies`);
+  return { id: msg.id, sig };
 }
 
 // Sunday evening (7 PM ET hour): post a "what we're playing" recap in #gaming
