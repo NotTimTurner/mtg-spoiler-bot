@@ -7,6 +7,10 @@ Replaces the MonitoRSS feed, whose Bluesky RSS has no image. Reads the public
 Bluesky API (no login), posts each "Daily Deals" post once, and remembers what
 it posted in arena_seen.json. Never fails the workflow.
 
+All days go into ONE forum thread (Tim's request, Nov 18 2026): the thread ID is
+in arena_thread.txt (falls back to DEFAULT_THREAD). If posting there fails (thread
+deleted or locked), the bot starts a new "Arena Daily Deals" thread and saves its ID.
+
 Env vars:
   DEALS_DISCORD_WEBHOOK_URL  webhook in the #deals forum (same one deals_bot.py uses)
   DRY_RUN=1                  print instead of posting
@@ -14,6 +18,7 @@ Env vars:
 import json
 import os
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -24,6 +29,9 @@ FEED_URL = ("https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?"
             + urllib.parse.urlencode({"actor": ACTOR, "limit": 10, "filter": "posts_no_replies"}))
 STATE_FILE = Path(__file__).with_name("arena_seen.json")
 ARENA_TAG = "1572361945103990885"   # "Arena" tag in the #deals forum
+THREAD_FILE = Path(__file__).with_name("arena_thread.txt")
+DEFAULT_THREAD = "1572653988241739797"  # "Arena Daily Deals" post in #deals
+THREAD_NAME = "Arena Daily Deals"
 MAX_AGE = timedelta(days=2)
 MAX_POSTS = 3
 UA = "DiscordBot (https://github.com/NotTimTurner/mtg-spoiler-bot, 1.0)"
@@ -43,7 +51,7 @@ def download(url):
         return r.read(), r.headers.get_content_type()
 
 
-def post(payload, image=None):
+def post(payload, image=None, query=""):
     """Post to the webhook. image = (bytes, content_type) is uploaded as an attachment,
     which Discord shows reliably (it won't render cdn.bsky.app links in embeds)."""
     if not image:
@@ -63,7 +71,7 @@ def post(payload, image=None):
             f"--{b}--\r\n".encode(),
         ]
         data, ctype = b"".join(parts), f"multipart/form-data; boundary={b}"
-    req = urllib.request.Request(WEBHOOK + "?wait=true", data=data,
+    req = urllib.request.Request(WEBHOOK + "?wait=true" + query, data=data,
                                  headers={"Content-Type": ctype, "User-Agent": UA})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
@@ -114,14 +122,21 @@ def main():
                 image = download(images[0]["fullsize"])
             except Exception as e:
                 print(f"Couldn't download the deals image: {e}")
-        local = created.astimezone(timezone(timedelta(hours=-5)))
-        thread = f"Arena Daily Deals - {local.strftime('%a %b')} {local.day}"
+        thread_id = (THREAD_FILE.read_text().strip() if THREAD_FILE.exists() else "") or DEFAULT_THREAD
+        base = {"username": "Arena Daily Deals", "allowed_mentions": {"parse": []}}
         if DRY_RUN:
-            print(json.dumps({"thread_name": thread, "embed": embed, "image_bytes": len(image[0]) if image else 0}, indent=1))
+            print(json.dumps({"thread_id": thread_id, "embed": embed,
+                              "image_bytes": len(image[0]) if image else 0}, indent=1))
         else:
-            post({"username": "Arena Daily Deals", "allowed_mentions": {"parse": []},
-                  "thread_name": thread, "applied_tags": [ARENA_TAG], "embeds": [embed]}, image)
-            print("Posted:", thread)
+            try:
+                post({**base, "embeds": [embed]}, image, f"&thread_id={thread_id}")
+                print(f"Posted {title_line} in thread {thread_id}")
+            except urllib.error.HTTPError as e:
+                print(f"Couldn't post in thread {thread_id} ({e.code}); starting a new thread")
+                msg = post({**base, "embeds": [embed], "thread_name": THREAD_NAME,
+                            "applied_tags": [ARENA_TAG]}, image)
+                THREAD_FILE.write_text(msg["channel_id"] + "\n")
+                print("New thread:", msg["channel_id"])
         seen.append(p["uri"])
         time.sleep(2)
 
