@@ -34,6 +34,8 @@ TAGS = {  # forum tag IDs in #deals
 }
 UA = "DiscordBot (https://github.com/NotTimTurner/mtg-spoiler-bot, 1.0)"
 WEBHOOK = os.environ.get("DEALS_DISCORD_WEBHOOK_URL", "")
+# Items tagged "event" (MagicCon / SCG CON and other big-event news) go to #tournaments
+EVENTS_WEBHOOK = os.environ.get("TOURNAMENTS_WEBHOOK_URL", "")
 DRY_RUN = os.environ.get("DRY_RUN") == "1"
 
 
@@ -65,12 +67,24 @@ def chunks(text):
     return out or ["(no details)"]
 
 
-def post(payload, query=""):
+def post(payload, query="", webhook=None):
     req = urllib.request.Request(
-        WEBHOOK + "?wait=true" + query, data=json.dumps(payload).encode(),
+        (webhook or WEBHOOK) + "?wait=true" + query, data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json", "User-Agent": UA})
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.load(r)
+
+
+def post_event(d):
+    title = (d.get("title") or "Event").strip()[:250]
+    body = (d.get("body") or "").replace("\\n", "\n").strip()
+    if DRY_RUN:
+        print(f"[dry run, #tournaments] {title}\n{body}\n")
+        return
+    for i, part in enumerate(chunks(f"**{title}**\n{body}")):
+        post({"username": "Big Events", "allowed_mentions": {"parse": []}, "content": part},
+             webhook=EVENTS_WEBHOOK)
+        time.sleep(1)
 
 
 def post_deal(d):
@@ -112,7 +126,12 @@ def main():
             if count >= MAX_POSTS:
                 print("Hit MAX_POSTS; the rest wait for the next run")
                 break
-            post_deal(d)
+            if (d.get("tag") or "").lower() == "event":
+                if not EVENTS_WEBHOOK and not DRY_RUN:
+                    continue  # wait until TOURNAMENTS_WEBHOOK_URL is set
+                post_event(d)
+            else:
+                post_deal(d)
             seen.add(key); posted.append(key); count += 1
             if not DRY_RUN:
                 STATE_FILE.write_text(json.dumps(posted[-500:], indent=1) + "\n")
