@@ -6,7 +6,7 @@ Tim's daily sealed-deal check (a Claude scheduled task) drops files named
 deals-YYYY-MM-DD*.json into a public Google Drive folder. Each file is a JSON
 list of deals: [{"id": "...", "title": "...", "body": "...", "tag": "sealed"}].
 This script runs with the spoiler bot every 15 minutes, reads the newest files,
-and posts each deal it hasn't posted before as its own forum post.
+and posts each deal it hasn't posted before into the "Sealed & Secret Lair Finds" thread.
 
 Remembers what it posted in posted_deals.json. Never fails the workflow: any
 error is printed and the script exits 0, so spoilers keep working.
@@ -19,6 +19,7 @@ import json
 import os
 import re
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -32,6 +33,12 @@ TAGS = {  # forum tag IDs in #deals
     "secret_lair": "1572361916251377806",
     "arena": "1572361945103990885",
 }
+# All deals from this source go into ONE forum thread (Tim's request, Nov 19 2026).
+# The ID lives in deals_thread.txt (falls back to DEFAULT_THREAD); if that thread is
+# deleted or locked, a new "Sealed & Secret Lair Finds" thread is started and saved.
+THREAD_FILE = Path(__file__).with_name("deals_thread.txt")
+DEFAULT_THREAD = "1572958267640913930"
+THREAD_NAME = "Sealed & Secret Lair Finds"
 UA = "DiscordBot (https://github.com/NotTimTurner/mtg-spoiler-bot, 1.0)"
 WEBHOOK = os.environ.get("DEALS_DISCORD_WEBHOOK_URL", "")
 # Items tagged "event" (MagicCon / SCG CON and other big-event news) go to #tournaments
@@ -95,11 +102,19 @@ def post_deal(d):
         print(f"[dry run] {title} ({tag})\n{body}\n")
         return
     base = {"username": "Sealed Deals", "allowed_mentions": {"parse": []}}
-    parts = chunks(body)
-    msg = post({**base, "content": parts[0], "thread_name": title, "applied_tags": [tag]})
+    parts = chunks(f"**{title}**\n{body}")
+    thread_id = (THREAD_FILE.read_text().strip() if THREAD_FILE.exists() else "") or DEFAULT_THREAD
+    try:
+        post({**base, "content": parts[0]}, f"&thread_id={thread_id}")
+    except urllib.error.HTTPError as e:
+        print(f"Couldn't post in thread {thread_id} ({e.code}); starting a new thread")
+        msg = post({**base, "content": parts[0], "thread_name": THREAD_NAME,
+                    "applied_tags": [TAGS["sealed"], TAGS["secret_lair"]]})
+        thread_id = msg["channel_id"]
+        THREAD_FILE.write_text(thread_id + "\n")
     for part in parts[1:]:
         time.sleep(1)
-        post({**base, "content": part}, f"&thread_id={msg['channel_id']}")
+        post({**base, "content": part}, f"&thread_id={thread_id}")
 
 
 def main():
