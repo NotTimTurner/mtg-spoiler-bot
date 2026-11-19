@@ -89,7 +89,7 @@ jobs:
           git config user.name "spoiler-bot"
           git config user.email "spoiler-bot@users.noreply.github.com"
           git add seen.json
-          for f in posted_deals.json arena_seen.json arena_thread.txt pogo_seen.json free_games_seen.json trophies_state.json; do
+          for f in posted_deals.json deals_thread.txt arena_seen.json arena_thread.txt pogo_seen.json free_games_seen.json trophies_state.json; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
           git diff --cached --quiet || (git commit -m "Update seen cards" && git push)
