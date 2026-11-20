@@ -1,19 +1,24 @@
 {
- "lastCheck": "2026-11-20T15:00:42.418Z",
+ "lastCheck": "2026-11-20T16:00:40.158Z",
  "authWarned": false,
  "week": [
   {
    "game": "Grand Theft Auto VI",
    "type": "bronze",
    "at": "2026-11-20T00:49:39Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "bronze",
+   "at": "2026-11-20T15:34:58Z"
   }
  ],
  "lastTrophy": {
-  "game": "Grand Theft Auto VI",
-  "name": "Just Like Paradise",
+  "game": "FINAL FANTASY RESONANCE",
+  "name": "Mechabo Mania",
   "type": "bronze",
-  "at": "2026-11-20T00:49:39Z"
+  "at": "2026-11-20T15:34:58Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR21085_00|1|1|2026-11-20T00:49:39Z"
+ "nowPlayingSig": "NPWR58353_00|21|34|2026-11-20T15:34:58Z"
 }
