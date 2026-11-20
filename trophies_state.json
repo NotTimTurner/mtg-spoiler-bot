@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-20T18:00:37.427Z",
+ "lastCheck": "2026-11-20T19:00:41.210Z",
  "authWarned": false,
  "week": [
   {
@@ -11,14 +11,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "bronze",
    "at": "2026-11-20T15:34:58Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "bronze",
+   "at": "2026-11-20T18:17:06Z"
   }
  ],
  "lastTrophy": {
   "game": "FINAL FANTASY RESONANCE",
-  "name": "Mechabo Mania",
+  "name": "Making Lid Proud",
   "type": "bronze",
-  "at": "2026-11-20T15:34:58Z"
+  "at": "2026-11-20T18:17:06Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR58353_00|21|34|2026-11-20T15:34:58Z"
+ "nowPlayingSig": "NPWR58353_00|22|36|2026-11-20T18:17:06Z"
 }
