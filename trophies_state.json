@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-20T19:00:41.210Z",
+ "lastCheck": "2026-11-20T20:00:36.835Z",
  "authWarned": false,
  "week": [
   {
@@ -16,14 +16,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "bronze",
    "at": "2026-11-20T18:17:06Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "bronze",
+   "at": "2026-11-20T19:05:37Z"
   }
  ],
  "lastTrophy": {
   "game": "FINAL FANTASY RESONANCE",
-  "name": "Making Lid Proud",
+  "name": "And the Winner Is...",
   "type": "bronze",
-  "at": "2026-11-20T18:17:06Z"
+  "at": "2026-11-20T19:05:37Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR58353_00|22|36|2026-11-20T18:17:06Z"
+ "nowPlayingSig": "NPWR58353_00|23|37|2026-11-20T19:05:37Z"
 }
