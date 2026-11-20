@@ -1,8 +1,19 @@
 {
- "lastCheck": "2026-11-20T00:00:38.123Z",
+ "lastCheck": "2026-11-20T01:00:39.940Z",
  "authWarned": false,
- "week": [],
- "lastTrophy": null,
+ "week": [
+  {
+   "game": "Grand Theft Auto VI",
+   "type": "bronze",
+   "at": "2026-11-20T00:49:39Z"
+  }
+ ],
+ "lastTrophy": {
+  "game": "Grand Theft Auto VI",
+  "name": "Just Like Paradise",
+  "type": "bronze",
+  "at": "2026-11-20T00:49:39Z"
+ },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR58353_00|20|33|"
+ "nowPlayingSig": "NPWR21085_00|1|1|2026-11-20T00:49:39Z"
 }
