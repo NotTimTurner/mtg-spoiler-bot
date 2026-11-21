@@ -863,7 +863,7 @@ def main():
         "nextReward": LEVEL_REWARD.get(nx[1]) if nx else None,
         "boss": state["todayLine"]["boss"], "steps": state.get("fitbit", {}).get("today_steps"),
         "stepsAt": state.get("fitbit", {}).get("checked", "")[11:16],
-        "stepTarget": STEP_TARGET, "pedalMin": pedal_minutes(state.get("fitbit", {}).get("today_steps")),
+        "stepTarget": STEP_TARGET, "fitWalk": fit_walk(fit.get(today.isoformat())), "fitLift": fit_lift(fit.get(today.isoformat())), "pedalMin": pedal_minutes(state.get("fitbit", {}).get("today_steps")),
         "history": [{"d": dd, "amt": (state["ledger"].get("day:" + dd) or {}).get("amount", state.get("practice", {}).get(dd))}
                     for dd in [(today - timedelta(days=i)).isoformat() for i in range(28, 0, -1)]],
         "weights": [{"d": k, "lb": v} for k, v in state.get("weightLog", {}).items() if k >= (today - timedelta(days=60)).isoformat()],
