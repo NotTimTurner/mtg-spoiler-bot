@@ -22,6 +22,7 @@ import json
 import os
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -47,6 +48,23 @@ WORKOUTS = {
                    "DB rear-delt fly 3×12", "DB curl 3×12"]),
 }
 PEDAL_GOAL = 20  # minutes, every day
+GUIDES_CHANNEL = "1573751266402635786"  # #workout-guides (Tim + Daisy)
+
+
+def split_move(move):
+    """'Plank 3×30 s' -> ('Plank', '3×30 s')."""
+    words = move.split(" ")
+    for i, w in enumerate(words):
+        if w[:1].isdigit():
+            return " ".join(words[:i]), " ".join(words[i:])
+    return move, ""
+
+
+def video(exercise):
+    """YouTube search link for a form tutorial (search links never go stale)."""
+    name = split_move(exercise)[0].replace("DB ", "dumbbell ")
+    return "https://www.youtube.com/results?search_query=" + urllib.parse.quote_plus(f"how to {name} proper form")
+
 
 # ---- XP table ----
 LEVELS = [(0, "SD"), (300, "HG"), (900, "RG"), (2000, "MG"), (4000, "PG"), (7000, "PG Unleashed")]
@@ -240,13 +258,33 @@ def scoreboard(state, today):
                                      f" · 📝 logging {streak(state, 'logged', today)} · 🏋️ lifts {streak(state, 'lift', today, True)}",
          "inline": False},
         {"name": "This week's lifts", "value": "\n".join(week), "inline": False},
-        {"name": "Today", "value": todays + f"\n+ pedal {PEDAL_GOAL}+ min", "inline": False},
+        {"name": "Today", "value": todays + f"\n+ pedal {PEDAL_GOAL}+ min · videos in <#{GUIDES_CHANNEL}>", "inline": False},
         {"name": "Rewards", "value": f"🎁 {state.get('rewards', 0)} earned (1 per boss defeated: build a kit from the Gunpla "
                                      f"backlog, or pick your own)", "inline": False},
     ]
     return {"title": "🎮 Tim's quest log", "color": 0xF57C00, "fields": fields,
             "footer": {"text": "Scores come from the daily food-log wrap-up · not medical advice"},
             "timestamp": datetime.now(ZoneInfo("UTC")).isoformat()}
+
+
+def guide_payload():
+    days = {"A": "Monday", "B": "Wednesday", "C": "Friday"}
+    embeds = []
+    for key, (title, moves) in WORKOUTS.items():
+        lines = []
+        for m in moves:
+            name, sets = split_move(m)
+            lines.append(f"**{name}** {sets} · [▶ video]({video(m)})")
+        embeds.append({"title": f"{days[key]} · {title}", "description": "\n".join(lines), "color": 0xF57C00})
+    embeds.append({"title": "Every day · pedal + how-to", "color": 0x43A047, "description": "\n".join([
+        f"**Pedal exerciser** {PEDAL_GOAL}+ min (counts toward steps)",
+        "**Warm up** 5 min easy pedal + 1 light set of the first lift",
+        "**Rest** 60–90 s between sets",
+        "**Weight** pick one where the last 2 reps feel hard but your form stays clean; go up a little when every set feels easy",
+        "**Each of you** uses your own weights; do the sets together, taking turns",
+        "Videos are YouTube searches for a form tutorial, so pick one from a trusted trainer. Stop if anything hurts; this isn't medical advice.",
+    ])})
+    return {"username": "Workout Guides", "embeds": embeds, "allowed_mentions": {"parse": []}}
 
 
 def split_markdown(text, limit=3900):
@@ -269,8 +307,23 @@ def main():
     url = os.environ.get("GAME_ICS_URL", "").strip()
     game_hook = os.environ.get("GAME_WEBHOOK_URL", "").strip()
     plan_hook = os.environ.get("MEALPLAN_WEBHOOK_URL", "").strip()
+    guide_hook = os.environ.get("GUIDES_WEBHOOK_URL", "").strip()
+    if guide_hook or DRY_RUN:  # workout guide card, re-posted only when the plan changes
+        gp = guide_payload()
+        sig = json.dumps(gp, sort_keys=True)
+        if state.get("guideSig") != sig:
+            try:
+                state["guideId"] = send(guide_hook, gp, edit_id=state.get("guideId"))
+            except urllib.error.HTTPError as ex:
+                if ex.code != 404:
+                    raise
+                state["guideId"] = send(guide_hook, gp)
+            state["guideSig"] = sig
+            print("Game: workout guide posted/updated")
     if not url:
         print("Game: GAME_ICS_URL not set; skipping")
+        if not DRY_RUN:
+            STATE_FILE.write_text(json.dumps(state, indent=1) + "\n")
         return
     stats, plans = read_mailbox(url, today - timedelta(days=21))
 
