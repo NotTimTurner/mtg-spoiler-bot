@@ -27,8 +27,8 @@
  "reminded": [],
  "boardHour": "2026-11-21 17",
  "fitbit": {
-  "ok": false,
-  "checked": "2026-11-21T17:00-05:00",
-  "today_steps": null
+  "ok": true,
+  "checked": "2026-11-21T17:05-05:00",
+  "today_steps": 12161
  }
 }
