@@ -1,7 +1,27 @@
 {
- "days": {},
- "xp": 0,
- "posted": [],
+ "days": {
+  "2026-11-19": {
+   "xp": 10,
+   "hits": {
+    "cal": false,
+    "protein": false,
+    "sat_fat": false,
+    "sugar": false,
+    "fiber": null,
+    "chol": false,
+    "water": null,
+    "steps": null,
+    "lift": false,
+    "pedal": null,
+    "logged": true
+   },
+   "sig": "{\"budget\": 1848, \"cal\": 2280, \"chol\": 255, \"protein\": 112, \"sat_fat\": 29.5, \"sugar\": 70}"
+  }
+ },
+ "xp": 10,
+ "posted": [
+  "2026-11-19"
+ ],
  "plans": [],
  "rewards": 0,
  "boss": {
@@ -12,7 +32,7 @@
  "boardDay": "2026-11-21",
  "todayLine": {
   "date": "2026-11-21",
-  "level": "SD \u00b7 0 XP",
+  "level": "SD \u00b7 10 XP",
   "yesterday": null,
   "workout": "Rest day",
   "boss": "\ud83d\udc09 Sat Fat Dragon 0/5"
