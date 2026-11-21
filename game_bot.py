@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 """
-Game bot: turns Tim's daily food/workout totals into XP, levels, streaks and a weekly boss,
-and posts the Sunday meal plan.
+Game bot ("Quest Log"): Tim's real-life GTA-style game.
+Daily missions (food goals, steps, lifts, meal prep) pay or cost REAL dollars in a balance Tim can
+spend on Magic. Tim moves all real money himself; the bot only keeps score. Also: XP + Gunpla levels,
+a weekly boss (XP only), the workout guide card, the Sunday meal plan and schedule reminders.
 
 Input: a private Google Calendar ("Tim HQ Bot", secret iCal URL in GAME_ICS_URL) used as a mailbox.
-  * All-day event titled STATS on a day, description = JSON, written by the daily food-logging chat:
-      {"cal": 1840, "budget": 1848, "protein": 142, "sat_fat": 13, "sugar": 48, "fiber": 31,
-       "chol": 180, "water": 100, "steps": 9200, "workout": "A", "pedal_min": 25}
-    Any field can be left out; missing fields just aren't scored.
-  * All-day event titled MEALPLAN on a Sunday, description = the week's plan (Markdown), written by
-    the Sunday meal-plan scheduled task. Posted once to #meal-plan.
+  * STATS (all-day, JSON description) written by the daily food-logging chat:
+      {"cal": 1840, "budget": 1848, "protein": 142, "sat_fat": 13, "sugar": 48, "steps": 9200,
+       "workout": "A", "pedal_min": 25, "weight": 231.4, "meal_prep": true, "cook_extra": true, "activity": true}
+    Missing money fields count as a miss.
+  * SPEND / SAVED (all-day, {"amount": N, "note": "..."}): Tim spent balance on Magic / moved money to savings.
+  * MEALPLAN (Sunday, Markdown) from the Sunday meal-plan task -> #meal-plan.
 
-Output (Discord webhooks):
-  GAME_WEBHOOK_URL      #workouts: a scoreboard card edited in place + one result post per logged day
-                        + a weekly recap Sunday evening
-  MEALPLAN_WEBHOOK_URL  #meal-plan
-State: game_state.json (also read by hub_bot.py for the #today "Quest" line). Never fails the workflow.
-DRY_RUN=1 prints instead of posting.
+Output (Discord webhooks): GAME_WEBHOOK_URL (#workouts: mission board edited in place, day payouts,
+weekly payday, reminders), MEALPLAN_WEBHOOK_URL, GUIDES_WEBHOOK_URL.
+State: game_state.json (hub_bot.py reads todayLine). Never fails the workflow. DRY_RUN=1 prints only.
 """
 import json
 import os
@@ -75,18 +74,6 @@ BOSSES = {  # key: (name, emoji, stat checker, hits needed per week)
     "lift": ("Iron Titan", "🏋️", "all 3 lift days done", 3),
     "cal": ("Snack Goblin", "👺", "at or under your calorie budget", 5),
 }
-
-# ---- money: card fund (rewards) and savings jar (penalties); Tim moves the money himself ----
-LEVEL_REWARD = {"HG": 10, "RG": 15, "MG": 25, "PG": 40, "PG Unleashed": 75}  # $ added to card fund on level-up
-PERFECT_DAY_REWARD = 1
-BOSS_REWARD = 5
-BOSS_STREAK_BONUS = (4, 20)  # 4 bosses in a row -> +$20
-# penalty = base + 1 per repeat of the same miss in a row (capped); resets after a success
-PENALTY = {"lift": (2, 10), "nolog": (1, 5), "boss": (5, 15)}  # kind: (base $, cap $)
-BOSS_STEP = 5  # boss penalty grows $5 per consecutive escape
-GAME_START = "2026-11-23"  # Monday: XP counts from here (Nov 23-29 is a test week)
-MONEY_START = "2026-11-30"  # card fund rewards and savings penalties count from here
-
 
 def hits(s):
     """Per-goal pass/fail for one day's stats (None = not reported)."""
@@ -181,65 +168,6 @@ def streak(state, key, today, lift_only=False):
         d -= timedelta(days=1)
     return n
 
-
-def money_add(state, day, kind, amount, note):
-    state.setdefault("ledger", []).append({"date": day, "kind": kind, "amount": amount, "note": note})
-    state["ledger"] = state["ledger"][-300:]
-    if kind in ("reward", "spend"):
-        state["fund"] = round(state.get("fund", 0) + amount, 2)
-    else:
-        state["owed"] = round(state.get("owed", 0) + amount, 2)
-
-
-def penalty(state, kind):
-    run = state.setdefault("missRun", {}).get(kind, 0)
-    base, cap = PENALTY[kind]
-    step = BOSS_STEP if kind == "boss" else 1
-    state["missRun"][kind] = run + 1
-    return min(base + step * run, cap)
-
-
-def clear_run(state, kind):
-    state.setdefault("missRun", {})[kind] = 0
-
-
-def settle_days(state, today):
-    """Rewards/penalties for each finished day (from 2 days ago back to the game start), once."""
-    start = date.fromisoformat(state["start"])
-    done = set(state.setdefault("settled", []))
-    out = []
-    d = start
-    while d <= today - timedelta(days=2):
-        k = d.isoformat()
-        if k not in done:
-            rec = state["days"].get(k)
-            if not rec:
-                amt = penalty(state, "nolog")
-                money_add(state, k, "penalty", amt, "no log")
-                out.append((k, f"🏦 +${amt} owed to savings (no log)"))
-            else:
-                clear_run(state, "nolog")
-                h = rec["hits"]
-                if d.weekday() in LIFT_DAYS:
-                    if h.get("lift"):
-                        clear_run(state, "lift")
-                    else:
-                        amt = penalty(state, "lift")
-                        money_add(state, k, "penalty", amt, "missed lift day")
-                        out.append((k, f"🏦 +${amt} owed to savings (missed lift)"))
-                if all(h.get(x) for x in ("cal", "protein", "sat_fat", "sugar")):
-                    money_add(state, k, "reward", PERFECT_DAY_REWARD, "perfect day")
-                    out.append((k, f"💰 +${PERFECT_DAY_REWARD} card fund (perfect day)"))
-            done.add(k)
-        d += timedelta(days=1)
-    state["settled"] = sorted(done)[-120:]
-    return out
-
-
-def money_line(state):
-    return f"💰 Card fund **${state.get('fund', 0):g}** · 🏦 Owed to savings **${state.get('owed', 0):g}**"
-
-
 # ---------- I/O ----------
 
 def get(url):
@@ -289,7 +217,6 @@ def read_mailbox(url, since):
 
 
 # ---------- posts ----------
-
 def day_post(day, s, xp, h, lines):
     def mark(k, label, val, unit=""):
         if h.get(k) is None:
@@ -306,42 +233,6 @@ def day_post(day, s, xp, h, lines):
     return {"title": f"📊 {day:%a %b} {day.day}: +{xp} XP",
             "description": "\n".join(p for p in parts if p) + "\n\n" + " · ".join(lines),
             "color": 0x43A047 if xp >= 120 else (0xFBC02D if xp >= 70 else 0xE53935)}
-
-
-def scoreboard(state, today):
-    xp = state["xp"]
-    (lo, name), nxt = level_of(xp)
-    frac = 1.0 if not nxt else (xp - lo) / (nxt[0] - lo)
-    monday = week_start(today)
-    bkey = state["boss"]["key"]
-    bname, bemoji, bdesc, need = BOSSES[bkey]
-    got, need = boss_progress(state, monday, bkey)
-    week = []
-    for i in range(7):
-        d = monday + timedelta(days=i)
-        rec = state["days"].get(d.isoformat())
-        icon = "⬜" if d > today else ("✅" if rec and rec["hits"].get("lift") else ("❌" if d < today else "⏳"))
-        if d.weekday() in LIFT_DAYS:
-            week.append(f"{icon} {d:%a} {WORKOUTS[LIFT_DAYS[d.weekday()]][0]}")
-    wk = LIFT_DAYS.get(today.weekday())
-    todays = (f"**{WORKOUTS[wk][0]}**: " + " · ".join(WORKOUTS[wk][1])) if wk else "Rest day (no lift)"
-    fields = [
-        {"name": "Level", "value": f"**{name}** · {xp:,} XP\n`{bar(frac)}` "
-                                    + (f"{nxt[0] - xp:,} XP to {nxt[1]}" if nxt else "max grade!"), "inline": False},
-        {"name": f"{bemoji} Weekly boss: {bname}", "value": f"{bdesc}: **{got}/{need}** days\n`{bar(got / need, 10)}`"
-                                                             + ("\n💥 **Defeated!**" if got >= need else ""), "inline": False},
-        {"name": "Streaks", "value": f"🥩 protein {streak(state, 'protein', today)} · 🧈 sat fat {streak(state, 'sat_fat', today)}"
-                                     f" · 📝 logging {streak(state, 'logged', today)} · 🏋️ lifts {streak(state, 'lift', today, True)}",
-         "inline": False},
-        {"name": "This week's lifts", "value": "\n".join(week), "inline": False},
-        {"name": "Today", "value": todays + f"\n+ pedal {PEDAL_GOAL}+ min · videos in <#{GUIDES_CHANNEL}>", "inline": False},
-        {"name": "Rewards", "value": ("🧪 Test week: money starts Mon Nov 30\n" if today.isoformat() < MONEY_START else "") + money_line(state) + "\n"
-                                     f"Next level pays ${LEVEL_REWARD.get(nxt[1], 0) if nxt else 0} · boss ${BOSS_REWARD} · perfect day ${PERFECT_DAY_REWARD}\n"
-                                     f"Penalties start at $1–2 and go up $1 each repeat (boss $5, +$5)", "inline": False},
-    ]
-    return {"title": "🎮 Tim's quest log", "color": 0xF57C00, "fields": fields,
-            "footer": {"text": "Scores come from the daily food-log wrap-up · not medical advice"},
-            "timestamp": datetime.now(ZoneInfo("UTC")).isoformat()}
 
 
 def guide_payload():
@@ -375,19 +266,287 @@ def split_markdown(text, limit=3900):
     return chunks
 
 
+
+# ---- real-money missions (1 credit = $1; Tim moves real money himself) ----
+GAME_START = "2026-11-23"   # XP counts from here
+MONEY_START = "2026-11-30"  # dollars count from here (Nov 23-29 = test week, shown as practice $)
+DAILY = [  # key, label, pay, miss
+    ("log", "log food", 1, 1),
+    ("cal", "calories ≤ budget", 1, 1),
+    ("protein", "protein 140 g+", 1, 1),
+    ("sat_fat", "sat fat < 15 g", 1, 1),
+    ("steps", "8k steps", 1, 1),
+]
+LIFT_PAY = (3, 3)
+COOK_EXTRA_PAY = (1, 1)      # Wednesday: cook extra so Daisy has Thursday lunch
+SAT_ACTIVITY_PAY = 3         # Saturday long walk / activity (or 12k+ steps); no penalty
+SAT_STEPS = 12000
+MEAL_PREP_PAY = (3, 3)       # Sunday: Daisy's Mon/Tue lunches + Mon/Tue dinners
+WEIGHT_PAY = (4, 2)          # weekly average weight down / up vs last week
+PERFECT_WEEK = 5
+LEVEL_REWARD = {"HG": 10, "RG": 15, "MG": 25, "PG": 40, "PG Unleashed": 75}
+BUST_MULT = 2                # negative at week close -> move 2x the debt to savings by Wednesday
+BUST_CAP = 100               # most a single bust can cost
+FORFEIT_AFTER = 3            # this many busted weeks in a row cancels the next level-up reward
+
+# reminders: (weekdays, "HH:MM" ET, text). Tim works from home 9-5 M-F, lunch hour at noon.
+REMINDERS = [
+    ((0, 1, 2, 3, 4), "12:00", "🍽️ Lunch hour: log breakfast + lunch in Lose It, aim for 40 g protein, take a 10-min walk."),
+    ((0,), "17:00", "🏋️ Work's done. **Lift A: Push** when Daisy's home (~5:30). +$3 / −$3"),
+    ((1,), "17:00", "🚶 Work's done. Daisy's home ~7:30: pedal 20 min + a walk for steps. Dinner is from Sunday prep."),
+    ((2,), "17:00", "🏋️ Work's done. **Lift B: Legs** tonight (+$3 / −$3), and **cook extra** so Daisy has Thursday lunch (+$1 / −$1)."),
+    ((3,), "17:00", "🚶 Work's done. Daisy's home ~6:30: pedal 20 min + a walk for steps."),
+    ((4,), "17:00", "🏋️ Work's done. **Lift C: Pull** (Daisy's home from ~4). +$3 / −$3"),
+    ((5,), "09:00", "🌳 Fun day: long walk or an activity with Daisy (+$3), then lunch or dinner out. Log it in Lose It."),
+    ((6,), "10:00", "🥡 Meal prep day: Daisy's Mon/Tue lunches + Mon/Tue dinners. +$3 / −$3"),
+    ((0, 1, 2, 3, 4, 5, 6), "21:00", "📝 Log the rest of today in Lose It before bed (logging is +$1, and no log costs every food mission)."),
+]
+
+
+def is_busted_on(state, d):
+    for b in state.get("busts", []):
+        if b["from"] <= d and (not b.get("paid") or d < b["paid"]):
+            return True
+    return False
+
+
+def day_missions(day, s, doubled=False):
+    """[(label, ok, amount)] for one finished day. s=None means nothing logged (everything missed)."""
+    h = hits(s) if s else {}
+    mult = BUST_MULT if doubled else 1
+    out = []
+
+    def m(label, ok, pay, miss):
+        out.append((label, ok, pay if ok else -miss * mult))
+    for key, label, pay, miss in DAILY:
+        m(label, s is not None if key == "log" else h.get(key) is True, pay, miss)
+    wd = day.weekday()
+    if wd in LIFT_DAYS:
+        m(f"lift {LIFT_DAYS[wd]} ({WORKOUTS[LIFT_DAYS[wd]][0].split(' (')[0]})", bool(s and s.get("workout")), *LIFT_PAY)
+    if wd == 2:
+        m("cook extra for Thursday", bool(s and s.get("cook_extra")), *COOK_EXTRA_PAY)
+    if wd == 5:
+        ok = bool(s and (s.get("activity") or (s.get("steps") or 0) >= SAT_STEPS))
+        out.append(("Saturday walk/activity", ok, SAT_ACTIVITY_PAY if ok else 0))
+    if wd == 6:
+        m("meal prep", bool(s and s.get("meal_prep")), *MEAL_PREP_PAY)
+    return out
+
+
+def balance(state):
+    return round(sum(e["amount"] for e in state.get("ledger", {}).values()), 2)
+
+
+def owed(state):
+    return round(sum(b["owed"] - b.get("saved", 0) for b in state.get("busts", []) if not b.get("paid")), 2)
+
+
+def busted_now(state):
+    return any(not b.get("paid") for b in state.get("busts", []))
+
+
+def usd(x):
+    return f"${x:g}" if x >= 0 else f"−${-x:g}"
+
+
+def fmt(x):
+    return ("+" if x > 0 else ("−" if x < 0 else "")) + f"${abs(x):g}"
+
+
+def settle(state, stats, today):
+    """Recompute every finished day's dollars (idempotent), close finished weeks, pay level-ups.
+    Returns a list of (kind, payload) messages for anything new or changed."""
+    led = state.setdefault("ledger", {})
+    msgs = []
+    start = date.fromisoformat(MONEY_START)
+    # practice dollars for the test week (not counted)
+    prac = {}
+    d = date.fromisoformat(GAME_START)
+    while d < min(start, today):
+        k = d.isoformat()
+        if k in stats or d <= today - timedelta(days=2):
+            prac[k] = sum(a for _, _, a in day_missions(d, stats.get(k)))
+        d += timedelta(days=1)
+    state["practice"] = prac
+    # real days
+    d = start
+    while d <= today - timedelta(days=1):
+        k = d.isoformat()
+        if k in stats or d <= today - timedelta(days=2):
+            items = day_missions(d, stats.get(k), is_busted_on(state, k))
+            amt = sum(a for _, _, a in items)
+            old = led.get("day:" + k)
+            if not old or old["amount"] != amt:
+                led["day:" + k] = {"amount": amt, "date": k, "note": "missions"}
+                msgs.append(("day", (d, items, amt, old["amount"] if old else None)))
+        d += timedelta(days=1)
+    # week close: Monday payday once Sunday is logged (Tuesday at the latest)
+    w = start
+    while w + timedelta(days=6) <= today - timedelta(days=1):
+        sun = w + timedelta(days=6)
+        wk = w.isoformat()
+        if "week:" + wk not in led and (sun.isoformat() in stats or sun <= today - timedelta(days=2)):
+            lines, amt = [], 0
+            days = [(w + timedelta(days=i)).isoformat() for i in range(7)]
+            perfect = all(k in stats and all(ok for _, ok, _ in day_missions(date.fromisoformat(k), stats[k]))
+                          for k in days)
+            if perfect:
+                amt += PERFECT_WEEK; lines.append(f"🏆 Perfect week {fmt(PERFECT_WEEK)}")
+            wt = lambda ds: [stats[k]["weight"] for k in ds if k in stats and isinstance(stats[k].get("weight"), (int, float))]
+            cur, prev = wt(days), wt([(w - timedelta(days=7 - i)).isoformat() for i in range(7)])
+            if cur and prev:
+                a, b = sum(cur) / len(cur), sum(prev) / len(prev)
+                if a < b:
+                    amt += WEIGHT_PAY[0]; lines.append(f"⚖️ Weekly average down {b - a:.1f} lb {fmt(WEIGHT_PAY[0])}")
+                elif a > b:
+                    pen = WEIGHT_PAY[1] * (BUST_MULT if busted_now(state) else 1)
+                    amt -= pen; lines.append(f"⚖️ Weekly average up {a - b:.1f} lb {fmt(-pen)}")
+            led["week:" + wk] = {"amount": amt, "date": sun.isoformat(), "note": "weekly bonuses"}
+            week_total = sum(e["amount"] for k2, e in led.items() if k2.startswith("day:") and e["date"] in days) + amt
+            bal = balance(state)
+            if bal < 0:
+                debt = -bal
+                led["bust:" + wk] = {"amount": debt, "date": sun.isoformat(), "note": "busted: balance reset to $0"}
+                state.setdefault("busts", []).append({"week": wk, "owed": min(BUST_MULT * debt, BUST_CAP), "saved": 0,
+                                                      "from": today.isoformat(),
+                                                      "due": (w + timedelta(days=9)).isoformat()})
+                state["bustStreak"] = state.get("bustStreak", 0) + 1
+                lines.append(f"🚨 **BUSTED** at {fmt(-debt)}. Move **${min(BUST_MULT * debt, BUST_CAP):g}** to savings by "
+                             f"Wed {(w + timedelta(days=9)):%b} {(w + timedelta(days=9)).day}. Balance reset to $0; "
+                             f"until it's paid: no Magic spending and penalties are doubled.")
+            else:
+                state["bustStreak"] = 0
+            msgs.append(("week", (w, week_total, lines)))
+        w += timedelta(days=7)
+    # level-up rewards (only once money is live)
+    if today >= start:
+        names = [n for _, n in LEVELS]
+        cur = level_of(state["xp"])[0][1]
+        for lv in names[1: names.index(cur) + 1]:
+            if "level:" + lv in led:
+                continue
+            if state.get("bustStreak", 0) >= FORFEIT_AFTER:
+                led["level:" + lv] = {"amount": 0, "date": today.isoformat(), "note": f"{lv} reward forfeited"}
+                msgs.append(("note", f"🎉 Level up: **{lv}**, but the ${LEVEL_REWARD[lv]} reward is forfeited "
+                                     f"({FORFEIT_AFTER} busted weeks in a row)."))
+                state["bustStreak"] = 0
+            else:
+                led["level:" + lv] = {"amount": LEVEL_REWARD[lv], "date": today.isoformat(), "note": f"reached {lv}"}
+                msgs.append(("note", f"🎉 **Level up: {lv}!** {fmt(LEVEL_REWARD[lv])}"))
+    return msgs
+
+
+def apply_moves(state, moves):
+    led = state.setdefault("ledger", {})
+    state.setdefault("movesSeen", [])
+    msgs = []
+    for mv in sorted(moves, key=lambda m: m["date"]):
+        key = ("spend:" if mv["kind"] == "spend" else "saved:") + mv["id"]
+        if key in state.setdefault("movesSeen", []):
+            continue
+        state["movesSeen"].append(key)
+        if mv["kind"] == "spend":
+            warn = ""
+            if busted_now(state):
+                warn = " ⚠️ spent while BUSTED"
+            elif mv["amount"] > balance(state):
+                warn = f" ⚠️ that's more than the {fmt(balance(state))} balance"
+            led[key] = {"amount": -mv["amount"], "date": mv["date"], "note": mv["note"] or "Magic"}
+            msgs.append(f"🛒 Spent ${mv['amount']:g}" + (f" on {mv['note']}" if mv["note"] else "") + warn)
+        else:
+            left = mv["amount"]
+            for b in state.get("busts", []):
+                if b.get("paid") or left <= 0:
+                    continue
+                take = min(left, b["owed"] - b.get("saved", 0))
+                b["saved"] = round(b.get("saved", 0) + take, 2)
+                left -= take
+                if b["saved"] >= b["owed"]:
+                    b["paid"] = mv["date"]
+            msgs.append(f"🏦 Moved ${mv['amount']:g} to savings" +
+                        (" · **bust cleared, you're free** ✅" if not busted_now(state) else f" · still owe ${owed(state):g}"))
+    state["movesSeen"] = state["movesSeen"][-300:]
+    return msgs
+
+
+def board(state, today):
+    xp = state["xp"]
+    (lo, name), nxt = level_of(xp)
+    frac = 1.0 if not nxt else (xp - lo) / (nxt[0] - lo)
+    bal = balance(state)
+    test = today.isoformat() < MONEY_START
+    monday = week_start(today)
+    wk_days = [(monday + timedelta(days=i)).isoformat() for i in range(7)]
+    if test:
+        wk = sum(v for k, v in state.get("practice", {}).items() if k in wk_days)
+        top = (f"🧪 **Test week**: money starts Mon Nov 30.\nPractice earnings this week: **{fmt(wk)}**")
+    else:
+        wk = sum(e["amount"] for k, e in state["ledger"].items() if k.startswith("day:") and e["date"] in wk_days)
+        top = f"💵 Balance **{usd(bal)}** · this week {fmt(wk)}"
+    if busted_now(state):
+        b = next(b for b in state["busts"] if not b.get("paid"))
+        top = (f"🚨 **BUSTED** 🚨 Move **${owed(state):g}** to savings by {date.fromisoformat(b['due']):%a %b} "
+               f"{date.fromisoformat(b['due']).day}\nNo Magic spending · penalties doubled\n" + top)
+    mult = BUST_MULT if busted_now(state) else 1
+    todays = []
+    for _, label, pay, miss in DAILY:
+        todays.append(f"⬜ {label} `+${pay}/−${miss * mult}`")
+    wd = today.weekday()
+    if wd in LIFT_DAYS:
+        todays.append(f"⬜ **{WORKOUTS[LIFT_DAYS[wd]][0]}** `+${LIFT_PAY[0]}/−${LIFT_PAY[1] * mult}`")
+    if wd == 2:
+        todays.append(f"⬜ cook extra for Daisy's Thursday lunch `+${COOK_EXTRA_PAY[0]}/−${COOK_EXTRA_PAY[1] * mult}`")
+    if wd == 5:
+        todays.append(f"⬜ long walk or activity `+${SAT_ACTIVITY_PAY}`")
+    if wd == 6:
+        todays.append(f"⬜ meal prep (Daisy's Mon/Tue lunches + dinners) `+${MEAL_PREP_PAY[0]}/−${MEAL_PREP_PAY[1] * mult}`")
+    y = (today - timedelta(days=1)).isoformat()
+    ye = state["ledger"].get("day:" + y)
+    yv = ye["amount"] if ye else state.get("practice", {}).get(y)
+    yline = f"{fmt(yv)}" + (" (practice)" if not ye and yv is not None else "") if yv is not None else "waiting for the log"
+    bkey = state["boss"]["key"]
+    bname, bemoji, bdesc, _ = BOSSES[bkey]
+    got, need = boss_progress(state, monday, bkey)
+    fields = [
+        {"name": "Wallet", "value": top, "inline": False},
+        {"name": f"Today's missions ({today:%a})", "value": "\n".join(todays), "inline": False},
+        {"name": "Yesterday", "value": yline, "inline": True},
+        {"name": "Level", "value": f"**{name}** · {xp:,} XP\n`{bar(frac, 12)}` "
+                                    + (f"{nxt[0] - xp:,} to {nxt[1]} ({fmt(LEVEL_REWARD[nxt[1]])})" if nxt else "max!"),
+         "inline": True},
+        {"name": f"{bemoji} Boss: {bname} (XP only)", "value": f"{bdesc}: {got}/{need}", "inline": False},
+    ]
+    return {"title": "📱 Mission board", "color": 0xE53935 if busted_now(state) else (0x9E9E9E if test else 0x43A047),
+            "fields": fields,
+            "footer": {"text": "Missions settle from the daily food-log wrap-up · videos in #workout-guides · "
+                               "not medical advice"},
+            "timestamp": datetime.now(ZoneInfo("UTC")).isoformat()}
+
+
+def day_money_post(d, items, amt, old):
+    lines = [f"{'✅' if ok else '❌'} {label} `{fmt(a)}`" for label, ok, a in items]
+    title = f"💵 {d:%a %b} {d.day}: {fmt(amt)}" + (f" (corrected from {fmt(old)})" if old is not None else "")
+    return {"title": title, "description": "\n".join(lines),
+            "color": 0x43A047 if amt > 0 else (0xFBC02D if amt == 0 else 0xE53935)}
+
+
 def main():
     state = json.loads(STATE_FILE.read_text()) if STATE_FILE.exists() else {}
     state.setdefault("days", {}); state.setdefault("xp", 0); state.setdefault("posted", [])
-    state.setdefault("plans", []); state.setdefault("rewards", 0)
-    now = datetime.now(ET)
+    state.setdefault("plans", [])
+    if not isinstance(state.get("ledger"), dict):  # v1 (card fund / savings jar) -> v2 wallet
+        for k in ("ledger", "fund", "owed", "missRun", "settled", "moves", "levelsPaid", "start", "bossStreak", "rewards"):
+            state.pop(k, None)
+        state["ledger"] = {}
+    now = datetime.fromisoformat(os.environ["GAME_TEST_NOW"]).replace(tzinfo=ET) if os.environ.get("GAME_TEST_NOW") else datetime.now(ET)
     today = now.date()
-    state["start"] = MONEY_START
     for d in [d for d in state["days"] if d < GAME_START]:  # drop test days from before the start
         state["xp"] -= state["days"].pop(d)["xp"]
     url = os.environ.get("GAME_ICS_URL", "").strip()
     game_hook = os.environ.get("GAME_WEBHOOK_URL", "").strip()
     plan_hook = os.environ.get("MEALPLAN_WEBHOOK_URL", "").strip()
     guide_hook = os.environ.get("GUIDES_WEBHOOK_URL", "").strip()
+    post = lambda payload: send(game_hook, dict(payload, username="Quest Log", allowed_mentions={"parse": []}))
     if guide_hook or DRY_RUN:  # workout guide card, re-posted only when the plan changes
         gp = guide_payload()
         sig = json.dumps(gp, sort_keys=True)
@@ -399,44 +558,31 @@ def main():
                     raise
                 state["guideId"] = send(guide_hook, gp)
             state["guideSig"] = sig
-            print("Game: workout guide posted/updated")
     if not url:
         print("Game: GAME_ICS_URL not set; skipping")
         if not DRY_RUN:
             STATE_FILE.write_text(json.dumps(state, indent=1) + "\n")
         return
-    stats, plans, moves = read_mailbox(url, today - timedelta(days=21))
-    prev_level = level_of(state["xp"])[0][1]
-    money_msgs = []
+    if os.environ.get("GAME_TEST_STATS"):  # local testing only
+        stats, plans, moves = json.loads(os.environ["GAME_TEST_STATS"]), {}, json.loads(os.environ.get("GAME_TEST_MOVES", "[]"))
+    else:
+        stats, plans, moves = read_mailbox(url, date.fromisoformat(GAME_START) - timedelta(days=7))
+    weights = {k: v for k, v in stats.items()}  # keep pre-start weights for the first weekly comparison
+    stats = {k: v for k, v in stats.items() if k >= GAME_START or "weight" in v}
 
-    # new weekly boss on Monday (or first run)
+    # weekly boss (XP only)
     monday = week_start(today)
     if state.get("boss", {}).get("week") != monday.isoformat():
         old = state.get("boss")
-        if old and old["week"] >= state["start"]:  # no money for weeks before the money game started
-            got, need = boss_progress(state, date.fromisoformat(old["week"]), old["key"])
-            if got >= need:
-                state["rewards"] += 1
-                clear_run(state, "boss")
-                state["bossStreak"] = state.get("bossStreak", 0) + 1
-                money_add(state, old["week"], "reward", BOSS_REWARD, f"beat {BOSSES[old['key']][0]}")
-                money_msgs.append(f"💰 +${BOSS_REWARD} card fund (beat {BOSSES[old['key']][0]})")
-                n, bonus = BOSS_STREAK_BONUS
-                if state["bossStreak"] % n == 0:
-                    money_add(state, old["week"], "reward", bonus, f"{n} bosses in a row")
-                    money_msgs.append(f"💰 +${bonus} card fund ({n} bosses in a row!)")
-            else:
-                state["bossStreak"] = 0
-                amt = penalty(state, "boss")
-                money_add(state, old["week"], "penalty", amt, f"{BOSSES[old['key']][0]} escaped")
-                money_msgs.append(f"🏦 +${amt} owed to savings ({BOSSES[old['key']][0]} escaped)")
         if old:
+            got, need = boss_progress(state, date.fromisoformat(old["week"]), old["key"])
             state["lastBoss"] = old["key"]
             state.setdefault("bossLog", []).append({"week": old["week"], "key": old["key"], "won": got >= need})
+            if got >= need:
+                state["xp"] += 100
         state["boss"] = {"week": monday.isoformat(), "key": pick_boss(state, monday)}
-        print(f"Game: boss for week of {monday}: {state['boss']['key']}")
 
-    # score new or changed days
+    # XP for new or changed days
     changed = []
     for d, s in sorted(stats.items()):
         if d < GAME_START:
@@ -450,74 +596,56 @@ def main():
         state["xp"] += xp - (old["xp"] if old else 0)
         state["days"][d] = {"xp": xp, "hits": h, "sig": sig}
         changed.append((d, s, xp, h, lines, bool(old)))
-    print(f"Game: {len(stats)} STATS days found, {len(changed)} new/changed, total {state['xp']} XP")
-    new_level = level_of(state["xp"])[0][1]
-    names = [n for _, n in LEVELS]
-    if today.isoformat() >= MONEY_START:  # level-ups reached in the test week pay out when money starts
-        for lv in names[1: names.index(new_level) + 1]:
-            if lv in state.setdefault("levelsPaid", []):
-                continue
-            amt = LEVEL_REWARD.get(lv, 0)
-            money_add(state, today.isoformat(), "reward", amt, f"reached {lv}")
-            state["levelsPaid"].append(lv)
-            money_msgs.append(f"🎉 **Level up: {lv}!** 💰 +${amt} card fund")
-    money_msgs += [m for _, m in settle_days(state, today)]
-    seen_moves = set(state.setdefault("moves", []))
-    for mv in moves:
-        if mv["id"] in seen_moves:
-            continue
-        if mv["kind"] == "spend":
-            money_add(state, mv["date"], "spend", -mv["amount"], mv["note"] or "cards")
-            money_msgs.append(f"🛒 Spent ${mv['amount']:g} from the card fund" + (f" ({mv['note']})" if mv["note"] else ""))
-        else:
-            money_add(state, mv["date"], "saved", -mv["amount"], mv["note"] or "moved to savings")
-            money_msgs.append(f"✅ Moved ${mv['amount']:g} to savings")
-        seen_moves.add(mv["id"])
-    state["moves"] = sorted(seen_moves)[-200:]
-    if money_msgs:
-        print("Game: " + " | ".join(money_msgs))
+
+    msgs = settle(state, weights, today)
+    notes = apply_moves(state, moves)
+    print(f"Game: {len(stats)} STATS days, {len(changed)} new/changed, {state['xp']} XP, "
+          f"balance {usd(balance(state))}, owed ${owed(state):g}, {len(msgs)} money events")
 
     if game_hook or DRY_RUN:
-        for d, s, xp, h, lines, was in changed:
-            if d in state["posted"] and was:
-                continue  # corrected day: XP updated quietly, no second post
-            if (today - date.fromisoformat(d)).days > 7:
-                continue  # don't backfill old days into the channel
-            send(game_hook, {"username": "Quest Log", "embeds": [day_post(date.fromisoformat(d), s, xp, h, lines)],
-                             "allowed_mentions": {"parse": []}})
+        for d, s, xp, h, lines, was in changed:  # XP post per newly logged day (last 7 days only)
+            if (d in state["posted"] and was) or (today - date.fromisoformat(d)).days > 7:
+                continue
+            post({"embeds": [day_post(date.fromisoformat(d), s, xp, h, lines)]})
             state["posted"].append(d)
         state["posted"] = state["posted"][-60:]
-        if money_msgs:
-            send(game_hook, {"username": "Quest Log", "embeds": [{"title": "💰 Card fund / 🏦 savings",
-                             "description": "\n".join(money_msgs) + "\n\n" + money_line(state), "color": 0xFFD54F}],
-                             "allowed_mentions": {"parse": []}})
-        # scoreboard card: edit in place, refresh when something changed or once a day
-        if changed or money_msgs or state.get("boardDay") != today.isoformat():
-            payload = {"username": "Quest Log", "embeds": [scoreboard(state, today)], "allowed_mentions": {"parse": []}}
+        for kind, p in msgs:
+            if kind == "day":
+                post({"embeds": [day_money_post(*p)]})
+            elif kind == "week":
+                w, total, lines = p
+                post({"embeds": [{"title": f"💰 Payday: week of {w:%b} {w.day}",
+                                  "description": f"Missions this week: **{fmt(total)}**\n" + "\n".join(lines)
+                                                 + f"\n\n💵 Balance **{usd(balance(state))}**",
+                                  "color": 0xE53935 if busted_now(state) else 0xFFD54F}]})
+            else:
+                notes.insert(0, p)
+        if notes:
+            post({"embeds": [{"title": "💵 Wallet", "description": "\n".join(notes)
+                              + f"\n\nBalance **{usd(balance(state))}**" + (f" · owe savings **${owed(state):g}**"
+                                                                          if busted_now(state) else ""),
+                              "color": 0xFFD54F}]})
+        # reminders (first run inside a 2-hour window after the time)
+        sent = state.setdefault("reminded", [])
+        for i, (days, hhmm, text) in enumerate(REMINDERS):
+            hh, mm = map(int, hhmm.split(":"))
+            at = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+            key = f"{today}|{i}"
+            if today.weekday() in days and at <= now < at + timedelta(hours=2) and key not in sent:
+                post({"content": "📟 " + text})
+                sent.append(key)
+        state["reminded"] = sent[-60:]
+        # mission board: edit in place; refresh when anything changed or once an hour
+        hour_key = now.strftime("%Y-%m-%d %H")
+        if changed or msgs or notes or state.get("boardHour") != hour_key:
+            payload = {"username": "Quest Log", "embeds": [board(state, today)], "allowed_mentions": {"parse": []}}
             try:
                 state["boardId"] = send(game_hook, payload, edit_id=state.get("boardId"))
             except urllib.error.HTTPError as ex:
                 if ex.code != 404:
                     raise
                 state["boardId"] = send(game_hook, payload)
-            state["boardDay"] = today.isoformat()
-        # weekly recap: Sunday from 8 PM ET
-        if today.weekday() == 6 and now.hour >= 20 and state.get("recapWeek") != monday.isoformat():
-            days = [d for d in state["days"] if week_start(date.fromisoformat(d)) == monday]
-            wxp = sum(state["days"][d]["xp"] for d in days)
-            bkey = state["boss"]["key"]
-            got, need = boss_progress(state, monday, bkey)
-            best = max(days, key=lambda d: state["days"][d]["xp"]) if days else None
-            desc = (f"**{wxp} XP** this week across {len(days)} logged day{'s' if len(days) != 1 else ''}.\n"
-                    f"{BOSSES[bkey][1]} {BOSSES[bkey][0]}: {got}/{need} → "
-                    + ("**defeated, reward earned!** 🎁" if got >= need else "it got away this week.")
-                    + (f"\nBest day: {date.fromisoformat(best):%A} (+{state['days'][best]['xp']} XP)" if best else "")
-                    + "\n\n" + money_line(state)
-                    + (f"\n🏦 **Move ${state.get('owed', 0):g} to savings**, then tell the food-log chat so it clears."
-                       if state.get("owed", 0) > 0 else ""))
-            send(game_hook, {"username": "Quest Log", "embeds": [{"title": "🗓️ Weekly recap", "description": desc,
-                                                                    "color": 0x8E24AA}], "allowed_mentions": {"parse": []}})
-            state["recapWeek"] = monday.isoformat()
+            state["boardHour"] = hour_key
 
     if plan_hook or DRY_RUN:
         for d, body in sorted(plans.items()):
@@ -527,22 +655,23 @@ def main():
             for i in range(0, len(chunks), 10):
                 embeds = [{"description": c, "color": 0x43A047} for c in chunks[i:i + 10]]
                 if i == 0:
-                    embeds[0]["title"] = f"🍽️ Meal plan, week of {date.fromisoformat(d) + timedelta(days=1):%b} " \
-                                         f"{(date.fromisoformat(d) + timedelta(days=1)).day}"
+                    nd = date.fromisoformat(d) + timedelta(days=1)
+                    embeds[0]["title"] = f"🍽️ Meal plan, week of {nd:%b} {nd.day}"
                 send(plan_hook, {"username": "Meal Plan", "embeds": embeds, "allowed_mentions": {"parse": []}})
             state["plans"] = (state["plans"] + [d])[-20:]
-            print(f"Game: meal plan for {d} posted ({len(chunks)} part(s))")
 
     # summary for hub_bot's #today
     y = (today - timedelta(days=1)).isoformat()
     wk = LIFT_DAYS.get(today.weekday())
     (_, name), _ = level_of(state["xp"])
+    test = today.isoformat() < MONEY_START
     state["todayLine"] = {
         "date": today.isoformat(),
         "level": f"{name} · {state['xp']:,} XP",
         "yesterday": state["days"][y]["xp"] if y in state["days"] else None,
-        "workout": (f"{WORKOUTS[wk][0]}: " + " · ".join(WORKOUTS[wk][1])) if wk else "Rest day",
-        "money": f"${state.get('fund', 0):g} card fund · ${state.get('owed', 0):g} owed to savings",
+        "workout": (f"{WORKOUTS[wk][0]}: " + " · ".join(WORKOUTS[wk][1])) if wk else "Rest day (pedal + walk)",
+        "money": ("🚨 BUSTED: move $%g to savings · " % owed(state) if busted_now(state) else "")
+                 + ("test week (money starts Nov 30)" if test else f"{usd(balance(state))} balance"),
         "boss": f"{BOSSES[state['boss']['key']][1]} {BOSSES[state['boss']['key']][0]} "
                 f"{'%d/%d' % boss_progress(state, monday, state['boss']['key'])}",
     }
