@@ -808,6 +808,24 @@ def main():
         "boss": f"{BOSSES[state['boss']['key']][1]} {BOSSES[state['boss']['key']][0]} "
                 f"{'%d/%d' % boss_progress(state, monday, state['boss']['key'])}",
     }
+    # compact summary for the "Tim's Day" page (copied into the page by a scheduled task)
+    (lo, lname), nx = level_of(state["xp"])
+    wk_days = [(monday + timedelta(days=i)).isoformat() for i in range(7)]
+    yl = state["ledger"].get("day:" + y)
+    due = next((b["due"] for b in state.get("busts", []) if not b.get("paid")), "")
+    state["board"] = {
+        "date": today.isoformat(), "asOf": now.strftime("%a %I:%M %p").replace(" 0", " "),
+        "testWeek": test, "practiceWeek": sum(v for k, v in state.get("practice", {}).items() if k in wk_days),
+        "balance": balance(state),
+        "week": sum(e["amount"] for k, e in state["ledger"].items() if k.startswith("day:") and e["date"] in wk_days),
+        "yesterday": yl["amount"] if yl else state.get("practice", {}).get(y),
+        "busted": busted_now(state), "owed": owed(state),
+        "due": (date.fromisoformat(due).strftime("%a %b ") + str(date.fromisoformat(due).day)) if due else "",
+        "level": lname, "xp": state["xp"], "next": nx[1] if nx else None,
+        "toNext": (nx[0] - state["xp"]) if nx else None, "levelSpan": (nx[0] - lo) if nx else None,
+        "nextReward": LEVEL_REWARD.get(nx[1]) if nx else None,
+        "boss": state["todayLine"]["boss"], "steps": state.get("fitbit", {}).get("today_steps"),
+    }
     if not DRY_RUN:
         STATE_FILE.write_text(json.dumps(state, indent=1) + "\n")
 
