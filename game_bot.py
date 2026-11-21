@@ -307,6 +307,16 @@ def read_fitbit(since, today):
         page += 1
         if not token:
             break
+    try:  # TEST ONLY (Nov 21): does Lose It food reach the Health API? Read and print, nothing else
+        nut = rollup(tok, "nutrition-log", today - timedelta(days=1), end)
+        for k in sorted(nut):
+            print(f"Nutrition test {k}: " + json.dumps({a: b for a, b in nut[k].items() if not a.startswith("civil")}, sort_keys=True)[:1500])
+        if not nut:
+            print("Nutrition test: no data")
+    except urllib.error.HTTPError as ex:
+        print(f"Nutrition test failed: {ex.code} " + " ".join(ex.read().decode("utf-8", "replace").split())[:300])
+    except Exception as ex:
+        print(f"Nutrition test failed: {type(ex).__name__}: {str(ex)[:200]}")
     print(f"Game: Fitbit {start}..{today}: {sum('steps' in v for v in fit.values())} step days, "
           f"{sum('weight' in v for v in fit.values())} weigh-ins, {sum(len(v.get('exercises', [])) for v in fit.values())} workouts")
     return fit
