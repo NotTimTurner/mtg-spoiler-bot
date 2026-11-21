@@ -116,8 +116,8 @@ def score(day, s):
         xp += 5; lines.append("+5 within 100 of budget")
     if (s.get("protein") or 0) >= 120 and not h["protein"]:
         xp += 10; lines.append("+10 protein 120 g+")
-    if (s.get("steps") or 0) >= 10000:
-        xp += 10; lines.append("+10 10k steps bonus")
+    if (s.get("steps") or 0) >= 12500:
+        xp += 10; lines.append("+10 12.5k steps bonus")
     if s.get("workout"):
         pts = 40 if day.weekday() in LIFT_DAYS else 20
         xp += pts; lines.append(f"+{pts} workout" + ("" if day.weekday() in LIFT_DAYS else " (bonus day)"))
@@ -204,7 +204,7 @@ def read_mailbox(url, since):
     cal = icalendar.Calendar.from_ical(get(url))
     start = datetime.combine(since, datetime.min.time(), ET)
     stats, plans, moves, flags = {}, {}, [], {}
-    for ev in recurring_ical_events.of(cal).between(start, start + timedelta(days=60)):
+    for ev in recurring_ical_events.of(cal).between(start, datetime.now(ET) + timedelta(days=2)):
         title = str(ev.get("SUMMARY", "")).strip().upper()
         d = ev.get("DTSTART").dt
         d = d.astimezone(ET).date() if isinstance(d, datetime) else d
@@ -589,6 +589,12 @@ def apply_moves(state, moves):
                     b["paid"] = mv["date"]
             msgs.append(f"🏦 Moved ${mv['amount']:g} to savings" +
                         (" · **bust cleared, you're free** ✅" if not busted_now(state) else f" · still owe ${owed(state):g}"))
+    live = {"spend:" + m["id"] for m in moves}
+    for k in [k for k in led if k.startswith("spend:") and k not in live]:  # spend removed on the Day page
+        msgs.append(f"Removed a ${-led[k]['amount']:g} spend from {led[k]['date']} (undone on the Day page)")
+        led.pop(k)
+        if k in state["movesSeen"]:
+            state["movesSeen"].remove(k)
     state["movesSeen"] = state["movesSeen"][-300:]
     return msgs
 
@@ -819,7 +825,7 @@ def main():
             for i in range(0, len(chunks), 10):
                 embeds = [{"description": c, "color": 0x43A047} for c in chunks[i:i + 10]]
                 if i == 0:
-                    nd = date.fromisoformat(d) + timedelta(days=1)
+                    nd = date.fromisoformat(d) + timedelta(days=(7 - date.fromisoformat(d).weekday()) % 7)
                     embeds[0]["title"] = f"🍽️ Meal plan, week of {nd:%b} {nd.day}"
                 send(plan_hook, {"username": "Meal Plan", "embeds": embeds, "allowed_mentions": {"parse": []}})
             state["plans"] = (state["plans"] + [d])[-20:]
