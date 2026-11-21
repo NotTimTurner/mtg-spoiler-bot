@@ -270,6 +270,18 @@ def gaming_lines(today):
     return out
 
 
+def quest_lines(today):
+    f = HERE / "game_state.json"
+    g = json.loads(f.read_text()).get("todayLine") if f.exists() else None
+    out = []
+    if g and g.get("date") == today.isoformat():
+        y = g.get("yesterday")
+        out.append(f"🎮 {g['level']}" + (f" · yesterday **+{y} XP**" if y is not None else " · yesterday not logged"))
+        out.append(f"🏋️ {g['workout']}")
+        out.append(f"{g['boss']} this week")
+    out.append("🚶 Steps 8k (10k = bonus XP) · pedal 20+ min")
+    return out
+
 def health_lines(problems):
     out = list(problems)
     t = HERE / "trophies_state.json"
@@ -326,7 +338,7 @@ def post_today(state, now):
     add("Shiny targets", lambda: shiny_target_lines(today, [e for _, _, e in pogo]))
     add("Overnight", lambda: recap_lines(state))
     add("Gaming", lambda: gaming_lines(today))
-    fields.append({"name": "Steps", "value": "Goal: 10,000 (the pedal exerciser counts)", "inline": False})
+    add("Quest", lambda: quest_lines(today))
     if CAL_FAILS:
         problems.append(f"{len(CAL_FAILS)} calendar(s) failed to load (was a secret address reset?)")
     add("Needs you", lambda: health_lines(problems))
