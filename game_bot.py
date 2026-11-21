@@ -224,6 +224,7 @@ WALK_TYPES = ("WALK", "HIK", "RUN", "BIK", "CYCL", "SPORT", "GOLF", "SWIM", "DAN
 def health_token():
     cid, sec, ref = (os.environ.get(k, "").strip() for k in ("HEALTH_CLIENT_ID", "HEALTH_CLIENT_SECRET", "HEALTH_REFRESH_TOKEN"))
     if not (cid and sec and ref):
+        print("Game: Fitbit not configured (missing: " + ", ".join(n for n, v in (("HEALTH_CLIENT_ID", cid), ("HEALTH_CLIENT_SECRET", sec), ("HEALTH_REFRESH_TOKEN", ref)) if not v) + ")")
         return None
     data = urllib.parse.urlencode({"client_id": cid, "client_secret": sec, "refresh_token": ref,
                                    "grant_type": "refresh_token"}).encode()
@@ -289,6 +290,8 @@ def read_fitbit(since, today):
         page += 1
         if not token:
             break
+    print(f"Game: Fitbit {start}..{today}: {sum('steps' in v for v in fit.values())} step days, "
+          f"{sum('weight' in v for v in fit.values())} weigh-ins, {sum(len(v.get('exercises', [])) for v in fit.values())} workouts")
     return fit
 
 
