@@ -15,25 +15,27 @@
   "date": "2026-11-21",
   "level": "SD \u00b7 0 XP",
   "yesterday": null,
-  "workout": "Rest day (pedal + walk)",
+  "workout": "Rest day (walk; pedal if under 10k)",
   "money": "test week (money starts Nov 30)",
   "boss": "\ud83d\udc09 Sat Fat Dragon 0/5"
  },
  "guideId": "1573752484277780714",
- "guideSig": "{\"allowed_mentions\": {\"parse\": []}, \"embeds\": [{\"color\": 16088064, \"description\": \"**Bench press** 4\\u00d76\\u20138 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Bench+press+proper+form)\\n**Barbell overhead press** 3\\u00d78 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Barbell+overhead+press+proper+form)\\n**DB flyes** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+flyes+proper+form)\\n**DB overhead triceps extension** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+overhead+triceps+extension+proper+form)\\n**Plank** 3\\u00d730 s \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Plank+proper+form)\", \"title\": \"Monday \\u00b7 Push (bench day)\"}, {\"color\": 16088064, \"description\": \"**DB goblet squat** 4\\u00d710 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+goblet+squat+proper+form)\\n**Barbell Romanian deadlift** 3\\u00d78 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Barbell+Romanian+deadlift+proper+form)\\n**DB reverse lunge** 3\\u00d710/leg \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+reverse+lunge+proper+form)\\n**DB calf raise** 3\\u00d715 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+calf+raise+proper+form)\\n**Dead bug** 3\\u00d710/side \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Dead+bug+proper+form)\", \"title\": \"Wednesday \\u00b7 Legs\"}, {\"color\": 16088064, \"description\": \"**Barbell bent-over row** 4\\u00d78 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Barbell+bent-over+row+proper+form)\\n**One-arm DB row** 3\\u00d710/side \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+One-arm+dumbbell+row+proper+form)\\n**Barbell deadlift** 3\\u00d75 (moderate) \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Barbell+deadlift+proper+form)\\n**DB rear-delt fly** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+rear-delt+fly+proper+form)\\n**DB curl** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+curl+proper+form)\", \"title\": \"Friday \\u00b7 Pull\"}, {\"color\": 4431943, \"description\": \"**Pedal exerciser** 20+ min (counts toward steps)\\n**Warm up** 5 min easy pedal + 1 light set of the first lift\\n**Rest** 60\\u201390 s between sets\\n**Weight** pick one where the last 2 reps feel hard but your form stays clean; go up a little when every set feels easy\\n**Each of you** uses your own weights; do the sets together, taking turns\\nVideos are YouTube searches for a form tutorial, so pick one from a trusted trainer. Stop if anything hurts; this isn't medical advice.\", \"title\": \"Every day \\u00b7 pedal + how-to\"}], \"username\": \"Workout Guides\"}",
+ "guideSig": "{\"allowed_mentions\": {\"parse\": []}, \"embeds\": [{\"color\": 16088064, \"description\": \"**Bench press** 4\\u00d76\\u20138 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Bench+press+proper+form)\\n**Barbell overhead press** 3\\u00d78 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Barbell+overhead+press+proper+form)\\n**DB flyes** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+flyes+proper+form)\\n**DB overhead triceps extension** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+overhead+triceps+extension+proper+form)\\n**Plank** 3\\u00d730 s \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Plank+proper+form)\", \"title\": \"Monday \\u00b7 Push (bench day)\"}, {\"color\": 16088064, \"description\": \"**DB goblet squat** 4\\u00d710 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+goblet+squat+proper+form)\\n**Barbell Romanian deadlift** 3\\u00d78 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Barbell+Romanian+deadlift+proper+form)\\n**DB reverse lunge** 3\\u00d710/leg \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+reverse+lunge+proper+form)\\n**DB calf raise** 3\\u00d715 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+calf+raise+proper+form)\\n**Dead bug** 3\\u00d710/side \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Dead+bug+proper+form)\", \"title\": \"Wednesday \\u00b7 Legs\"}, {\"color\": 16088064, \"description\": \"**Barbell bent-over row** 4\\u00d78 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Barbell+bent-over+row+proper+form)\\n**One-arm DB row** 3\\u00d710/side \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+One-arm+dumbbell+row+proper+form)\\n**Barbell deadlift** 3\\u00d75 (moderate) \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Barbell+deadlift+proper+form)\\n**DB rear-delt fly** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+rear-delt+fly+proper+form)\\n**DB curl** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+curl+proper+form)\", \"title\": \"Friday \\u00b7 Pull\"}, {\"color\": 4431943, \"description\": \"**Pedal exerciser** only on days you're under 10,000 steps at 5 PM; the 5 PM reminder says how long\\n**Warm up** 5 min easy pedal + 1 light set of the first lift\\n**Rest** 60\\u201390 s between sets\\n**Weight** pick one where the last 2 reps feel hard but your form stays clean; go up a little when every set feels easy\\n**Each of you** uses your own weights; do the sets together, taking turns\\nVideos are YouTube searches for a form tutorial, so pick one from a trusted trainer. Stop if anything hurts; this isn't medical advice.\", \"title\": \"Every day \\u00b7 steps, pedal + how-to\"}], \"username\": \"Workout Guides\"}",
  "ledger": {},
  "practice": {},
  "movesSeen": [],
- "reminded": [],
+ "reminded": [
+  "2026-11-21|8"
+ ],
  "boardHour": "2026-11-21 17",
  "fitbit": {
   "ok": true,
-  "checked": "2026-11-21T17:30-05:00",
+  "checked": "2026-11-21T17:45-05:00",
   "today_steps": 12328
  },
  "board": {
   "date": "2026-11-21",
-  "asOf": "Sat 5:30 PM",
+  "asOf": "Sat 5:45 PM",
   "testWeek": true,
   "practiceWeek": 0,
   "balance": 0,
@@ -50,7 +52,9 @@
   "nextReward": 10,
   "boss": "\ud83d\udc09 Sat Fat Dragon 0/5",
   "steps": 12328,
-  "stepsAt": "17:30",
+  "stepsAt": "17:45",
+  "stepTarget": 10000,
+  "pedalMin": 0,
   "history": [
    {
     "d": "2026-10-24",
