@@ -216,6 +216,90 @@ def read_mailbox(url, since):
     return stats, plans, moves
 
 
+# ---------- Fitbit via Google Health API (read-only; secrets live in GitHub Actions) ----------
+LIFT_TYPES = ("WEIGHT", "STRENGTH", "CIRCUIT", "CROSSFIT", "CALISTHENICS", "BOOTCAMP", "TRAINING")
+WALK_TYPES = ("WALK", "HIK", "RUN", "BIK", "CYCL", "SPORT", "GOLF", "SWIM", "DANC", "TENNIS")
+
+
+def health_token():
+    cid, sec, ref = (os.environ.get(k, "").strip() for k in ("HEALTH_CLIENT_ID", "HEALTH_CLIENT_SECRET", "HEALTH_REFRESH_TOKEN"))
+    if not (cid and sec and ref):
+        return None
+    data = urllib.parse.urlencode({"client_id": cid, "client_secret": sec, "refresh_token": ref,
+                                   "grant_type": "refresh_token"}).encode()
+    req = urllib.request.Request("https://oauth2.googleapis.com/token", data=data, headers={"User-Agent": UA})
+    return json.loads(urllib.request.urlopen(req, timeout=30).read())["access_token"]
+
+
+def health_api(tok, path, body=None):
+    req = urllib.request.Request("https://health.googleapis.com/v4/users/me/" + path,
+                                 data=json.dumps(body).encode() if body is not None else None,
+                                 method="POST" if body is not None else "GET",
+                                 headers={"Authorization": "Bearer " + tok, "Content-Type": "application/json",
+                                          "User-Agent": UA})
+    return json.loads(urllib.request.urlopen(req, timeout=30).read())
+
+
+def civil(d):
+    return {"date": {"year": d.year, "month": d.month, "day": d.day}}
+
+
+def rollup(tok, kind, start, end):
+    out = {}
+    for p in health_api(tok, f"dataTypes/{kind}/dataPoints:dailyRollUp",
+                        {"range": {"start": civil(start), "end": civil(end)}, "windowSizeDays": 1}).get("rollupDataPoints", []):
+        dd = p["civilStartTime"]["date"]
+        out[date(dd["year"], dd["month"], dd["day"]).isoformat()] = p
+    return out
+
+
+def read_fitbit(since, today):
+    """{date: {"steps", "weight", "active_min", "exercises": [(type, minutes)]}}; {} when not configured."""
+    tok = health_token()
+    if not tok:
+        return {}
+    fit = {}
+    end = today + timedelta(days=1)
+    start = max(since, end - timedelta(days=89))
+    for k, p in rollup(tok, "steps", start, end).items():
+        fit.setdefault(k, {})["steps"] = int(p.get("steps", {}).get("countSum", 0))
+    for k, p in rollup(tok, "weight", start, end).items():
+        g = p.get("weight", {}).get("weightGramsAvg")
+        if g:
+            fit.setdefault(k, {})["weight"] = round(g / 453.59237, 1)
+    for k, p in rollup(tok, "active-minutes", max(start, end - timedelta(days=13)), end).items():
+        lv = {x.get("activityLevel"): int(x.get("activeMinutesSum", 0))
+              for x in p.get("activeMinutes", {}).get("activeMinutesRollupByActivityLevel", [])}
+        fit.setdefault(k, {})["active_min"] = lv.get("MODERATE", 0) + lv.get("VIGOROUS", 0)
+    flt = urllib.parse.quote(f'exercise.interval.civil_start_time >= "{start.isoformat()}T00:00:00"')
+    page, token = 0, ""
+    while page < 10:
+        res = health_api(tok, f"dataTypes/exercise/dataPoints?filter={flt}" + (f"&pageToken={token}" if token else ""))
+        for p in res.get("dataPoints", []):
+            iv = p.get("exercise", {}).get("interval", {})
+            try:
+                st = datetime.fromisoformat(iv["startTime"].replace("Z", "+00:00")).astimezone(ET)
+                en = datetime.fromisoformat(iv["endTime"].replace("Z", "+00:00")).astimezone(ET)
+            except (KeyError, ValueError):
+                continue
+            mins = round((en - st).total_seconds() / 60)
+            fit.setdefault(st.date().isoformat(), {}).setdefault("exercises", []).append(
+                (p["exercise"].get("exerciseType", "OTHER"), mins))
+        token = res.get("nextPageToken") or ""
+        page += 1
+        if not token:
+            break
+    return fit
+
+
+def fit_lift(f):
+    return any(any(t in typ for t in LIFT_TYPES) and m >= 15 for typ, m in (f or {}).get("exercises", []))
+
+
+def fit_walk(f):
+    return any(any(t in typ for t in WALK_TYPES) and m >= 30 for typ, m in (f or {}).get("exercises", []))
+
+
 # ---------- posts ----------
 def day_post(day, s, xp, h, lines):
     def mark(k, label, val, unit=""):
@@ -310,24 +394,30 @@ def is_busted_on(state, d):
     return False
 
 
-def day_missions(day, s, doubled=False):
-    """[(label, ok, amount)] for one finished day. s=None means nothing logged (everything missed)."""
+def day_missions(day, s, doubled=False, f=None):
+    """[(label, ok, amount)] for one finished day. s=None means nothing logged (every food mission missed).
+    f = that day's Fitbit data (steps and workouts are checked against it when present)."""
     h = hits(s) if s else {}
     mult = BUST_MULT if doubled else 1
     out = []
+    steps = f["steps"] if f and "steps" in f else (s or {}).get("steps")
 
     def m(label, ok, pay, miss):
         out.append((label, ok, pay if ok else -miss * mult))
     for key, label, pay, miss in DAILY:
-        m(label, s is not None if key == "log" else h.get(key) is True, pay, miss)
+        if key == "steps":
+            m(label + (" ⌚" if f and "steps" in f else ""), (steps or 0) >= GOALS["steps"], pay, miss)
+        else:
+            m(label, s is not None if key == "log" else h.get(key) is True, pay, miss)
     wd = day.weekday()
     if wd in LIFT_DAYS:
-        m(f"lift {LIFT_DAYS[wd]} ({WORKOUTS[LIFT_DAYS[wd]][0].split(' (')[0]})", bool(s and s.get("workout")), *LIFT_PAY)
+        ok = bool(s and s.get("workout")) or fit_lift(f)
+        m(f"lift {LIFT_DAYS[wd]} ({WORKOUTS[LIFT_DAYS[wd]][0].split(' (')[0]})" + (" ⌚" if fit_lift(f) else ""), ok, *LIFT_PAY)
     if wd == 2:
         m("cook extra for Thursday", bool(s and s.get("cook_extra")), *COOK_EXTRA_PAY)
     if wd == 5:
-        ok = bool(s and (s.get("activity") or (s.get("steps") or 0) >= SAT_STEPS))
-        out.append(("Saturday walk/activity", ok, SAT_ACTIVITY_PAY if ok else 0))
+        ok = bool(s and s.get("activity")) or (steps or 0) >= SAT_STEPS or fit_walk(f)
+        out.append(("Saturday walk/activity" + (" ⌚" if fit_walk(f) else ""), ok, SAT_ACTIVITY_PAY if ok else 0))
     if wd == 6:
         m("meal prep", bool(s and s.get("meal_prep")), *MEAL_PREP_PAY)
     return out
@@ -353,7 +443,8 @@ def fmt(x):
     return ("+" if x > 0 else ("−" if x < 0 else "")) + f"${abs(x):g}"
 
 
-def settle(state, stats, today):
+def settle(state, stats, today, fit=None):
+    fit = fit or {}
     """Recompute every finished day's dollars (idempotent), close finished weeks, pay level-ups.
     Returns a list of (kind, payload) messages for anything new or changed."""
     led = state.setdefault("ledger", {})
@@ -365,7 +456,7 @@ def settle(state, stats, today):
     while d < min(start, today):
         k = d.isoformat()
         if k in stats or d <= today - timedelta(days=2):
-            prac[k] = sum(a for _, _, a in day_missions(d, stats.get(k)))
+            prac[k] = sum(a for _, _, a in day_missions(d, stats.get(k), False, fit.get(k)))
         d += timedelta(days=1)
     state["practice"] = prac
     # real days
@@ -373,7 +464,7 @@ def settle(state, stats, today):
     while d <= today - timedelta(days=1):
         k = d.isoformat()
         if k in stats or d <= today - timedelta(days=2):
-            items = day_missions(d, stats.get(k), is_busted_on(state, k))
+            items = day_missions(d, stats.get(k), is_busted_on(state, k), fit.get(k))
             amt = sum(a for _, _, a in items)
             old = led.get("day:" + k)
             if not old or old["amount"] != amt:
@@ -388,11 +479,12 @@ def settle(state, stats, today):
         if "week:" + wk not in led and (sun.isoformat() in stats or sun <= today - timedelta(days=2)):
             lines, amt = [], 0
             days = [(w + timedelta(days=i)).isoformat() for i in range(7)]
-            perfect = all(k in stats and all(ok for _, ok, _ in day_missions(date.fromisoformat(k), stats[k]))
+            perfect = all(k in stats and all(ok for _, ok, _ in day_missions(date.fromisoformat(k), stats[k], False, fit.get(k)))
                           for k in days)
             if perfect:
                 amt += PERFECT_WEEK; lines.append(f"🏆 Perfect week {fmt(PERFECT_WEEK)}")
-            wt = lambda ds: [stats[k]["weight"] for k in ds if k in stats and isinstance(stats[k].get("weight"), (int, float))]
+            wt = lambda ds: [fit[k]["weight"] if "weight" in fit.get(k, {}) else stats[k]["weight"] for k in ds
+                            if "weight" in fit.get(k, {}) or (k in stats and isinstance(stats[k].get("weight"), (int, float)))]
             cur, prev = wt(days), wt([(w - timedelta(days=7 - i)).isoformat() for i in range(7)])
             if cur and prev:
                 a, b = sum(cur) / len(cur), sum(prev) / len(prev)
@@ -500,6 +592,9 @@ def board(state, today):
         todays.append(f"⬜ long walk or activity `+${SAT_ACTIVITY_PAY}`")
     if wd == 6:
         todays.append(f"⬜ meal prep (Daisy's Mon/Tue lunches + dinners) `+${MEAL_PREP_PAY[0]}/−${MEAL_PREP_PAY[1] * mult}`")
+    fsteps = state.get("fitbit", {}).get("today_steps")
+    if fsteps is not None:
+        todays.append(f"⌚ steps so far: **{fsteps:,}** / {GOALS['steps']:,}")
     y = (today - timedelta(days=1)).isoformat()
     ye = state["ledger"].get("day:" + y)
     yv = ye["amount"] if ye else state.get("practice", {}).get(y)
@@ -569,6 +664,25 @@ def main():
         stats, plans, moves = read_mailbox(url, date.fromisoformat(GAME_START) - timedelta(days=7))
     weights = {k: v for k, v in stats.items()}  # keep pre-start weights for the first weekly comparison
     stats = {k: v for k, v in stats.items() if k >= GAME_START or "weight" in v}
+    fit = {}
+    if not os.environ.get("GAME_TEST_STATS"):
+        try:
+            fit = read_fitbit(date.fromisoformat(GAME_START) - timedelta(days=14), today)
+            ex = sorted({t for v in fit.values() for t, _ in v.get("exercises", [])})
+            print(f"Game: Fitbit ok, {len(fit)} days, workout types seen: {', '.join(ex) or 'none'}")
+        except Exception as e:  # Fitbit trouble never breaks the game; self-reported stats still count
+            print(f"Game: Fitbit read failed ({type(e).__name__}: {str(e)[:120]})")
+            fit = {}
+    else:
+        fit = json.loads(os.environ.get("GAME_TEST_FIT", "{}"))
+    state["fitbit"] = {"ok": bool(fit), "checked": now.isoformat(timespec="minutes"),
+                       "today_steps": fit.get(today.isoformat(), {}).get("steps")}
+    for k, s in stats.items():  # Fitbit is the source of truth for steps (and fills in a missing lift)
+        f = fit.get(k, {})
+        if "steps" in f:
+            s["steps"] = f["steps"]
+        if not s.get("workout") and fit_lift(f) and date.fromisoformat(k).weekday() in LIFT_DAYS:
+            s["workout"] = LIFT_DAYS[date.fromisoformat(k).weekday()]
 
     # weekly boss (XP only)
     monday = week_start(today)
@@ -597,7 +711,7 @@ def main():
         state["days"][d] = {"xp": xp, "hits": h, "sig": sig}
         changed.append((d, s, xp, h, lines, bool(old)))
 
-    msgs = settle(state, weights, today)
+    msgs = settle(state, weights, today, fit)
     notes = apply_moves(state, moves)
     print(f"Game: {len(stats)} STATS days, {len(changed)} new/changed, {state['xp']} XP, "
           f"balance {usd(balance(state))}, owed ${owed(state):g}, {len(msgs)} money events")
