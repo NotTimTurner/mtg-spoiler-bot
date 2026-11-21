@@ -34,7 +34,7 @@ DRY_RUN = os.environ.get("DRY_RUN") == "1"
 UA = "DiscordBot (https://github.com/NotTimTurner/mtg-spoiler-bot, 1.0)"
 
 # ---- goals (Lose It goals, Oct 30 2026) ----
-GOALS = {"protein": 140, "sat_fat": 15, "sugar": 60, "fiber": 30, "chol": 200, "water": 100, "steps": 8000}
+GOALS = {"protein": 140, "sat_fat": 15, "sugar": 60, "fiber": 30, "chol": 200, "water": 100, "steps": 10000}
 
 # ---- workout plan: 3 lifts after work (Mon/Wed/Fri); pedal only to catch up on steps ----
 LIFT_DAYS = {0: "A", 2: "B", 4: "C"}  # weekday -> workout
@@ -108,7 +108,7 @@ def score(day, s):
     xp, lines = 10, ["+10 logged"]
     table = [("cal", 20, "calories ≤ budget"), ("protein", 25, "protein 140 g+"), ("sat_fat", 20, "sat fat < 15 g"),
              ("sugar", 10, "sugar < 60 g"), ("fiber", 10, "fiber 30 g+"), ("chol", 10, "cholesterol < 200 mg"),
-             ("water", 10, "water 100 oz+"), ("steps", 15, "8k steps"), ("pedal", 10, "pedal session")]
+             ("water", 10, "water 100 oz+"), ("steps", 15, "10k steps"), ("pedal", 10, "pedal session")]
     for k, pts, label in table:
         if h[k]:
             xp += pts; lines.append(f"+{pts} {label}")
@@ -379,7 +379,7 @@ DAILY = [  # key, label, pay, miss
     ("cal", "calories ≤ budget", 1, 1),
     ("protein", "protein 140 g+", 1, 1),
     ("sat_fat", "sat fat < 15 g", 1, 1),
-    ("steps", "8k steps", 1, 1),
+    ("steps", "10k steps", 1, 1),
 ]
 LIFT_PAY = (3, 3)
 COOK_EXTRA_PAY = (1, 1)      # Wednesday: cook extra so Daisy has Thursday lunch
