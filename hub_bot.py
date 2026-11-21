@@ -50,6 +50,7 @@ WMO = {0: "☀️ Clear", 1: "🌤️ Mostly clear", 2: "⛅ Partly cloudy", 3: 
        75: "❄️ Heavy snow", 77: "🌨️ Snow grains", 80: "🌦️ Showers", 81: "🌧️ Showers",
        82: "⛈️ Heavy showers", 85: "🌨️ Snow showers", 86: "❄️ Heavy snow showers",
        95: "⛈️ Thunderstorms", 96: "⛈️ Thunderstorms + hail", 99: "⛈️ Thunderstorms + hail"}
+DAY_PAGE_URL = "https://claude.ai/artifact/Sc8KaeyS6coqmWZpaw5fS6"  # Tim's Day page
 
 
 def get(url, timeout=30):
@@ -343,6 +344,7 @@ def post_today(state, now):
         problems.append(f"{len(CAL_FAILS)} calendar(s) failed to load (was a secret address reset?)")
     add("Needs you", lambda: health_lines(problems))
     embed = {"title": f"{today:%A, %B} {today.day}", "color": 0xF57C00, "fields": fields,
+             "url": DAY_PAGE_URL, "description": f"📱 **[Open Tim's Day]({DAY_PAGE_URL})**: schedule, food, missions and buttons",
              "footer": {"text": "Tim HQ · daily"}}
     webhook_send(hook, {"username": "Today", "embeds": [embed], "allowed_mentions": {"parse": []}})
     state["todayPosted"] = today.isoformat()
