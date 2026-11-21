@@ -62,7 +62,6 @@ jobs:
         continue-on-error: true
         env:
           DEALS_DISCORD_WEBHOOK_URL: ${{ secrets.DEALS_DISCORD_WEBHOOK_URL }}
-          DRY_RUN: "1"
         run: python mtgcompare_bot.py
 
       - name: Post new trophies
