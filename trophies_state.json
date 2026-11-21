@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-21T00:00:34.127Z",
+ "lastCheck": "2026-11-21T01:00:34.394Z",
  "authWarned": false,
  "week": [
   {
@@ -21,14 +21,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "bronze",
    "at": "2026-11-20T19:05:37Z"
+  },
+  {
+   "game": "Grand Theft Auto VI",
+   "type": "bronze",
+   "at": "2026-11-21T00:32:14Z"
   }
  ],
  "lastTrophy": {
-  "game": "FINAL FANTASY RESONANCE",
-  "name": "And the Winner Is...",
+  "game": "Grand Theft Auto VI",
+  "name": "Baited My Tackle",
   "type": "bronze",
-  "at": "2026-11-20T19:05:37Z"
+  "at": "2026-11-21T00:32:14Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR21085_00|1|1|2026-11-20T19:05:37Z"
+ "nowPlayingSig": "NPWR21085_00|2|2|2026-11-21T00:32:14Z"
 }
