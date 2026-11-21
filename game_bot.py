@@ -84,6 +84,7 @@ BOSS_STREAK_BONUS = (4, 20)  # 4 bosses in a row -> +$20
 # penalty = base + 1 per repeat of the same miss in a row (capped); resets after a success
 PENALTY = {"lift": (2, 10), "nolog": (1, 5), "boss": (5, 15)}  # kind: (base $, cap $)
 BOSS_STEP = 5  # boss penalty grows $5 per consecutive escape
+GAME_START = "2026-11-23"  # Monday: XP, rewards and penalties all count from here
 
 
 def hits(s):
@@ -203,7 +204,7 @@ def clear_run(state, kind):
 
 def settle_days(state, today):
     """Rewards/penalties for each finished day (from 2 days ago back to the game start), once."""
-    start = date.fromisoformat(state.setdefault("start", (today + timedelta(days=1)).isoformat()))
+    start = date.fromisoformat(state["start"])
     done = set(state.setdefault("settled", []))
     out = []
     d = start
@@ -379,6 +380,9 @@ def main():
     state.setdefault("plans", []); state.setdefault("rewards", 0)
     now = datetime.now(ET)
     today = now.date()
+    state["start"] = GAME_START
+    for d in [d for d in state["days"] if d < GAME_START]:  # drop test days from before the start
+        state["xp"] -= state["days"].pop(d)["xp"]
     url = os.environ.get("GAME_ICS_URL", "").strip()
     game_hook = os.environ.get("GAME_WEBHOOK_URL", "").strip()
     plan_hook = os.environ.get("MEALPLAN_WEBHOOK_URL", "").strip()
@@ -408,7 +412,6 @@ def main():
     monday = week_start(today)
     if state.get("boss", {}).get("week") != monday.isoformat():
         old = state.get("boss")
-        state.setdefault("start", (today + timedelta(days=1)).isoformat())
         if old and old["week"] >= state["start"]:  # no money for weeks before the money game started
             got, need = boss_progress(state, date.fromisoformat(old["week"]), old["key"])
             if got >= need:
@@ -435,6 +438,8 @@ def main():
     # score new or changed days
     changed = []
     for d, s in sorted(stats.items()):
+        if d < GAME_START:
+            continue
         sig = json.dumps(s, sort_keys=True)
         old = state["days"].get(d)
         if old and old.get("sig") == sig:
