@@ -36,7 +36,7 @@ UA = "DiscordBot (https://github.com/NotTimTurner/mtg-spoiler-bot, 1.0)"
 # ---- goals (Lose It goals, Oct 30 2026) ----
 GOALS = {"protein": 140, "sat_fat": 15, "sugar": 60, "fiber": 30, "chol": 200, "water": 100, "steps": 8000}
 
-# ---- workout plan: 3 lifts after work (Mon/Wed/Fri) + daily pedal ----
+# ---- workout plan: 3 lifts after work (Mon/Wed/Fri); pedal only to catch up on steps ----
 LIFT_DAYS = {0: "A", 2: "B", 4: "C"}  # weekday -> workout
 WORKOUTS = {
     "A": ("Push (bench day)", ["Bench press 4×6–8", "Barbell overhead press 3×8", "DB flyes 3×12",
@@ -46,7 +46,17 @@ WORKOUTS = {
     "C": ("Pull", ["Barbell bent-over row 4×8", "One-arm DB row 3×10/side", "Barbell deadlift 3×5 (moderate)",
                    "DB rear-delt fly 3×12", "DB curl 3×12"]),
 }
-PEDAL_GOAL = 20  # minutes, every day
+PEDAL_GOAL = 10  # minutes for the pedal XP bonus
+STEP_TARGET = 10000  # Tim's daily step target; short of it at 5 PM -> pedal to catch up
+PEDAL_STEPS_PER_MIN = 100  # rough steps Fitbit credits per pedal minute (tune if it reads differently)
+
+
+def pedal_minutes(steps):
+    """Minutes of pedaling to reach STEP_TARGET from `steps` (0 = not needed), rounded up to 5, 10..60."""
+    if steps is None or steps >= STEP_TARGET:
+        return 0
+    m = -(-(STEP_TARGET - steps) // PEDAL_STEPS_PER_MIN)
+    return min(60, max(10, -(-m // 5) * 5))
 DONE_KEYS = ("workout", "cook_extra", "activity", "meal_prep", "pedal_min")  # what the Day page can mark
 GUIDES_CHANNEL = "1573751266402635786"  # #workout-guides (Tim + Daisy)
 
@@ -98,7 +108,7 @@ def score(day, s):
     xp, lines = 10, ["+10 logged"]
     table = [("cal", 20, "calories ≤ budget"), ("protein", 25, "protein 140 g+"), ("sat_fat", 20, "sat fat < 15 g"),
              ("sugar", 10, "sugar < 60 g"), ("fiber", 10, "fiber 30 g+"), ("chol", 10, "cholesterol < 200 mg"),
-             ("water", 10, "water 100 oz+"), ("steps", 15, "8k steps"), ("pedal", 10, f"pedal {PEDAL_GOAL}+ min")]
+             ("water", 10, "water 100 oz+"), ("steps", 15, "8k steps"), ("pedal", 10, "pedal session")]
     for k, pts, label in table:
         if h[k]:
             xp += pts; lines.append(f"+{pts} {label}")
@@ -338,8 +348,8 @@ def guide_payload():
             name, sets = split_move(m)
             lines.append(f"**{name}** {sets} · [▶ video]({video(m)})")
         embeds.append({"title": f"{days[key]} · {title}", "description": "\n".join(lines), "color": 0xF57C00})
-    embeds.append({"title": "Every day · pedal + how-to", "color": 0x43A047, "description": "\n".join([
-        f"**Pedal exerciser** {PEDAL_GOAL}+ min (counts toward steps)",
+    embeds.append({"title": "Every day · steps, pedal + how-to", "color": 0x43A047, "description": "\n".join([
+        f"**Pedal exerciser** only on days you're under {STEP_TARGET:,} steps at 5 PM; the 5 PM reminder says how long",
         "**Warm up** 5 min easy pedal + 1 light set of the first lift",
         "**Rest** 60–90 s between sets",
         "**Weight** pick one where the last 2 reps feel hard but your form stays clean; go up a little when every set feels easy",
@@ -387,14 +397,25 @@ FORFEIT_AFTER = 3            # this many busted weeks in a row cancels the next 
 REMINDERS = [
     ((0, 1, 2, 3, 4), "12:00", "🍽️ Lunch hour: log breakfast + lunch in Lose It, aim for 40 g protein, take a 10-min walk."),
     ((0,), "17:00", "🏋️ Work's done. **Lift A: Push** when Daisy's home (~5:30). +$3 / −$3"),
-    ((1,), "17:00", "🚶 Work's done. Daisy's home ~7:30: pedal 20 min + a walk for steps. Dinner is from Sunday prep."),
+    ((1,), "17:00", "🚶 Work's done. Daisy's home ~7:30: take a walk for steps. Dinner is from Sunday prep."),
     ((2,), "17:00", "🏋️ Work's done. **Lift B: Legs** tonight (+$3 / −$3), and **cook extra** so Daisy has Thursday lunch (+$1 / −$1)."),
-    ((3,), "17:00", "🚶 Work's done. Daisy's home ~6:30: pedal 20 min + a walk for steps."),
+    ((3,), "17:00", "🚶 Work's done. Daisy's home ~6:30: take a walk for steps."),
     ((4,), "17:00", "🏋️ Work's done. **Lift C: Pull** (Daisy's home from ~4). +$3 / −$3"),
     ((5,), "09:00", "🌳 Fun day: long walk or an activity with Daisy (+$3), then lunch or dinner out. Log it in Lose It."),
     ((6,), "10:00", "🥡 Meal prep day: Daisy's Mon/Tue lunches + Mon/Tue dinners. +$3 / −$3"),
+    ((5, 6), "17:00", ""),  # weekend: just the 5 PM step check
     ((0, 1, 2, 3, 4, 5, 6), "21:00", "📝 Log the rest of today in Lose It before bed (logging is +$1, and no log costs every food mission)."),
 ]
+
+
+def pedal_line(steps):
+    if steps is None:
+        return f"🚲 Couldn't read your Fitbit steps. If you're under {STEP_TARGET:,}, pedal to catch up (about {PEDAL_STEPS_PER_MIN} steps a minute)."
+    m = pedal_minutes(steps)
+    if not m:
+        return f"✅ {steps:,} steps: {STEP_TARGET // 1000}k done, no pedal needed today."
+    return (f"🚲 {steps:,} steps so far ({STEP_TARGET - steps:,} short of {STEP_TARGET // 1000}k): "
+            f"pedal about **{m} min** tonight, or walk it off.")
 
 
 def is_busted_on(state, d):
@@ -772,7 +793,10 @@ def main():
             at = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
             key = f"{today}|{i}"
             if today.weekday() in days and at <= now < at + timedelta(hours=2) and key not in sent:
-                post({"content": "📟 " + text})
+                msg = text
+                if hhmm == "17:00":  # 5 PM step check decides tonight's pedal time
+                    msg = (text + "\n" if text else "") + pedal_line(fit.get(today.isoformat(), {}).get("steps") if fit else None)
+                post({"content": "📟 " + msg})
                 sent.append(key)
         state["reminded"] = sent[-60:]
         # mission board: edit in place; refresh when anything changed or once an hour
@@ -809,7 +833,7 @@ def main():
         "date": today.isoformat(),
         "level": f"{name} · {state['xp']:,} XP",
         "yesterday": state["days"][y]["xp"] if y in state["days"] else None,
-        "workout": (f"{WORKOUTS[wk][0]}: " + " · ".join(WORKOUTS[wk][1])) if wk else "Rest day (pedal + walk)",
+        "workout": (f"{WORKOUTS[wk][0]}: " + " · ".join(WORKOUTS[wk][1])) if wk else "Rest day (walk; pedal if under 10k)",
         "money": ("🚨 BUSTED: move $%g to savings · " % owed(state) if busted_now(state) else "")
                  + ("test week (money starts Nov 30)" if test else f"{usd(balance(state))} balance"),
         "boss": f"{BOSSES[state['boss']['key']][1]} {BOSSES[state['boss']['key']][0]} "
@@ -833,6 +857,7 @@ def main():
         "nextReward": LEVEL_REWARD.get(nx[1]) if nx else None,
         "boss": state["todayLine"]["boss"], "steps": state.get("fitbit", {}).get("today_steps"),
         "stepsAt": state.get("fitbit", {}).get("checked", "")[11:16],
+        "stepTarget": STEP_TARGET, "pedalMin": pedal_minutes(state.get("fitbit", {}).get("today_steps")),
         "history": [{"d": dd, "amt": (state["ledger"].get("day:" + dd) or {}).get("amount", state.get("practice", {}).get(dd))}
                     for dd in [(today - timedelta(days=i)).isoformat() for i in range(28, 0, -1)]],
         "weights": [{"d": k, "lb": v} for k, v in state.get("weightLog", {}).items() if k >= (today - timedelta(days=60)).isoformat()],
