@@ -162,8 +162,8 @@ def post_shiny(state, now):
         print("Shiny: SHINY_WEBHOOK_URL not set; skipping")
         return
     missing = json.loads(MISSING_FILE.read_text())
-    if isinstance(missing, dict):
-        missing = list(missing)
+    if isinstance(missing, dict):  # {"_note": ..., "missing": [...]}
+        missing = missing.get("missing", [])
     if state.get("shinyMissing") == len(missing) and state.get("shinyMsgId") and \
             state.get("shinyDay") == now.date().isoformat():
         return  # nothing changed today
