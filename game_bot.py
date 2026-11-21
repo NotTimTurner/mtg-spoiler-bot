@@ -687,8 +687,15 @@ def main():
             fit = {}
     else:
         fit = json.loads(os.environ.get("GAME_TEST_FIT", "{}"))
-    state["fitbit"] = {"ok": bool(fit), "checked": now.isoformat(timespec="minutes"),
-                       "today_steps": fit.get(today.isoformat(), {}).get("steps")}
+    if fit:
+        state["fitbit"] = {"ok": True, "checked": now.isoformat(timespec="minutes"),
+                           "today_steps": fit.get(today.isoformat(), {}).get("steps")}
+        for k, v in fit.items():
+            if "weight" in v:
+                state.setdefault("weightLog", {})[k] = v["weight"]
+        state["weightLog"] = dict(sorted(state.get("weightLog", {}).items())[-120:])
+    else:
+        state.setdefault("fitbit", {})["ok"] = False
     for k, s in stats.items():  # Fitbit is the source of truth for steps (and fills in a missing lift)
         f = fit.get(k, {})
         if "steps" in f:
@@ -718,7 +725,7 @@ def main():
     # XP for new or changed days
     changed = []
     for d, s in sorted(stats.items()):
-        if d < GAME_START:
+        if d < GAME_START or d >= today.isoformat():  # today can be a running total; score it tomorrow
             continue
         sig = json.dumps(s, sort_keys=True)
         old = state["days"].get(d)
@@ -825,6 +832,10 @@ def main():
         "toNext": (nx[0] - state["xp"]) if nx else None, "levelSpan": (nx[0] - lo) if nx else None,
         "nextReward": LEVEL_REWARD.get(nx[1]) if nx else None,
         "boss": state["todayLine"]["boss"], "steps": state.get("fitbit", {}).get("today_steps"),
+        "stepsAt": state.get("fitbit", {}).get("checked", "")[11:16],
+        "history": [{"d": dd, "amt": (state["ledger"].get("day:" + dd) or {}).get("amount", state.get("practice", {}).get(dd))}
+                    for dd in [(today - timedelta(days=i)).isoformat() for i in range(28, 0, -1)]],
+        "weights": [{"d": k, "lb": v} for k, v in state.get("weightLog", {}).items() if k >= (today - timedelta(days=60)).isoformat()],
     }
     if not DRY_RUN:
         STATE_FILE.write_text(json.dumps(state, indent=1) + "\n")
