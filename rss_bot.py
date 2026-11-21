@@ -10,6 +10,7 @@ the channel isn't flooded. Never fails the workflow.
 Env vars:
   GAMING_NEWS_WEBHOOK_URL   webhook in #gaming-news
   GUNPLA_NEWS_WEBHOOK_URL   webhook in #gunpla-news
+  MTG_NEWS_WEBHOOK_URL      webhook in #mtg-news
   DRY_RUN=1                 print instead of posting
 """
 import html
@@ -28,6 +29,8 @@ FEEDS = [
     ("Gematsu", "https://www.gematsu.com/feed", "GAMING_NEWS_WEBHOOK_URL", 0xE53935),
     ("Gundam Kits Collection", "https://www.gundamkitscollection.com/feeds/posts/default?alt=rss",
      "GUNPLA_NEWS_WEBHOOK_URL", 0xF57C00),
+    # dormant until the MTG_NEWS_WEBHOOK_URL secret exists (MonitoRSS still posts MTG Rocks until then)
+    ("MTG Rocks", "https://mtgrocks.com/feed/", "MTG_NEWS_WEBHOOK_URL", 0x8E24AA),
 ]
 STATE_FILE = Path(__file__).with_name("rss_seen.json")
 MAX_PER_FEED = 3          # per run, so a busy feed can't flood the channel
