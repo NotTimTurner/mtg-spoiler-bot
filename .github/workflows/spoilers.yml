@@ -64,6 +64,9 @@ jobs:
         env:
           TODAY_WEBHOOK_URL: ${{ secrets.TODAY_WEBHOOK_URL }}
           TODAY_ICS_URLS: ${{ secrets.TODAY_ICS_URLS }}
+          FOOD_ICS_URL: ${{ secrets.FOOD_ICS_URL }}
+          BIRTHDAYS_ICS_URL: ${{ secrets.BIRTHDAYS_ICS_URL }}
+          TODAY_COUNTDOWNS: ${{ secrets.TODAY_COUNTDOWNS }}
           SHINY_WEBHOOK_URL: ${{ secrets.SHINY_WEBHOOK_URL }}
         run: |
           pip install -q recurring-ical-events || echo "iCal libraries unavailable"
