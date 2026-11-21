@@ -47,6 +47,7 @@ WORKOUTS = {
                    "DB rear-delt fly 3×12", "DB curl 3×12"]),
 }
 PEDAL_GOAL = 20  # minutes, every day
+DONE_KEYS = ("workout", "cook_extra", "activity", "meal_prep", "pedal_min")  # what the Day page can mark
 GUIDES_CHANNEL = "1573751266402635786"  # #workout-guides (Tim + Daisy)
 
 
@@ -192,7 +193,7 @@ def read_mailbox(url, since):
     import recurring_ical_events
     cal = icalendar.Calendar.from_ical(get(url))
     start = datetime.combine(since, datetime.min.time(), ET)
-    stats, plans, moves = {}, {}, []
+    stats, plans, moves, flags = {}, {}, [], {}
     for ev in recurring_ical_events.of(cal).between(start, start + timedelta(days=60)):
         title = str(ev.get("SUMMARY", "")).strip().upper()
         d = ev.get("DTSTART").dt
@@ -206,6 +207,12 @@ def read_mailbox(url, since):
                 print(f"Game: STATS on {d} isn't valid JSON ({ex})")
         elif title.startswith("MEALPLAN"):
             plans[d.isoformat()] = body
+        elif title.startswith("DONE"):
+            try:
+                j = json.loads(body[body.index("{"): body.rindex("}") + 1])
+                flags.setdefault(d.isoformat(), {}).update({k: v for k, v in j.items() if k in DONE_KEYS})
+            except (ValueError, TypeError, AttributeError) as ex:
+                print(f"Game: DONE on {d} isn't valid ({ex})")
         elif title.startswith("SPEND") or title.startswith("SAVED"):
             try:
                 j = json.loads(body[body.index("{"): body.rindex("}") + 1])
@@ -213,7 +220,7 @@ def read_mailbox(url, since):
                               "date": d.isoformat(), "amount": float(j["amount"]), "note": str(j.get("note", ""))})
             except (ValueError, KeyError, TypeError) as ex:
                 print(f"Game: {title[:5]} on {d} isn't valid ({ex})")
-    return stats, plans, moves
+    return stats, plans, moves, flags
 
 
 # ---------- Fitbit via Google Health API (read-only; secrets live in GitHub Actions) ----------
@@ -404,6 +411,7 @@ def day_missions(day, s, doubled=False, f=None):
     mult = BUST_MULT if doubled else 1
     out = []
     steps = f["steps"] if f and "steps" in f else (s or {}).get("steps")
+    fl = (f or {}).get("flags", {})
 
     def m(label, ok, pay, miss):
         out.append((label, ok, pay if ok else -miss * mult))
@@ -414,15 +422,15 @@ def day_missions(day, s, doubled=False, f=None):
             m(label, s is not None if key == "log" else h.get(key) is True, pay, miss)
     wd = day.weekday()
     if wd in LIFT_DAYS:
-        ok = bool(s and s.get("workout")) or fit_lift(f)
+        ok = bool((s or {}).get("workout") or fl.get("workout")) or fit_lift(f)
         m(f"lift {LIFT_DAYS[wd]} ({WORKOUTS[LIFT_DAYS[wd]][0].split(' (')[0]})" + (" ⌚" if fit_lift(f) else ""), ok, *LIFT_PAY)
     if wd == 2:
-        m("cook extra for Thursday", bool(s and s.get("cook_extra")), *COOK_EXTRA_PAY)
+        m("cook extra for Thursday", bool((s or {}).get("cook_extra") or fl.get("cook_extra")), *COOK_EXTRA_PAY)
     if wd == 5:
-        ok = bool(s and s.get("activity")) or (steps or 0) >= SAT_STEPS or fit_walk(f)
+        ok = bool((s or {}).get("activity") or fl.get("activity")) or (steps or 0) >= SAT_STEPS or fit_walk(f)
         out.append(("Saturday walk/activity" + (" ⌚" if fit_walk(f) else ""), ok, SAT_ACTIVITY_PAY if ok else 0))
     if wd == 6:
-        m("meal prep", bool(s and s.get("meal_prep")), *MEAL_PREP_PAY)
+        m("meal prep", bool((s or {}).get("meal_prep") or fl.get("meal_prep")), *MEAL_PREP_PAY)
     return out
 
 
@@ -663,8 +671,9 @@ def main():
         return
     if os.environ.get("GAME_TEST_STATS"):  # local testing only
         stats, plans, moves = json.loads(os.environ["GAME_TEST_STATS"]), {}, json.loads(os.environ.get("GAME_TEST_MOVES", "[]"))
+        flags = json.loads(os.environ.get("GAME_TEST_FLAGS", "{}"))
     else:
-        stats, plans, moves = read_mailbox(url, date.fromisoformat(GAME_START) - timedelta(days=7))
+        stats, plans, moves, flags = read_mailbox(url, date.fromisoformat(GAME_START) - timedelta(days=7))
     weights = {k: v for k, v in stats.items()}  # keep pre-start weights for the first weekly comparison
     stats = {k: v for k, v in stats.items() if k >= GAME_START or "weight" in v}
     fit = {}
@@ -686,6 +695,13 @@ def main():
             s["steps"] = f["steps"]
         if not s.get("workout") and fit_lift(f) and date.fromisoformat(k).weekday() in LIFT_DAYS:
             s["workout"] = LIFT_DAYS[date.fromisoformat(k).weekday()]
+    for k, fl in flags.items():  # taps from the Day page (DONE events)
+        if k < GAME_START:
+            continue
+        if k in stats:
+            stats[k].update(fl)
+        else:
+            fit.setdefault(k, {})["flags"] = fl
 
     # weekly boss (XP only)
     monday = week_start(today)
