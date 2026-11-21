@@ -84,7 +84,8 @@ BOSS_STREAK_BONUS = (4, 20)  # 4 bosses in a row -> +$20
 # penalty = base + 1 per repeat of the same miss in a row (capped); resets after a success
 PENALTY = {"lift": (2, 10), "nolog": (1, 5), "boss": (5, 15)}  # kind: (base $, cap $)
 BOSS_STEP = 5  # boss penalty grows $5 per consecutive escape
-GAME_START = "2026-11-23"  # Monday: XP, rewards and penalties all count from here
+GAME_START = "2026-11-23"  # Monday: XP counts from here (Nov 23-29 is a test week)
+MONEY_START = "2026-11-30"  # card fund rewards and savings penalties count from here
 
 
 def hits(s):
@@ -334,7 +335,7 @@ def scoreboard(state, today):
          "inline": False},
         {"name": "This week's lifts", "value": "\n".join(week), "inline": False},
         {"name": "Today", "value": todays + f"\n+ pedal {PEDAL_GOAL}+ min · videos in <#{GUIDES_CHANNEL}>", "inline": False},
-        {"name": "Rewards", "value": money_line(state) + "\n"
+        {"name": "Rewards", "value": ("🧪 Test week: money starts Mon Nov 30\n" if today.isoformat() < MONEY_START else "") + money_line(state) + "\n"
                                      f"Next level pays ${LEVEL_REWARD.get(nxt[1], 0) if nxt else 0} · boss ${BOSS_REWARD} · perfect day ${PERFECT_DAY_REWARD}\n"
                                      f"Penalties start at $1–2 and go up $1 each repeat (boss $5, +$5)", "inline": False},
     ]
@@ -380,7 +381,7 @@ def main():
     state.setdefault("plans", []); state.setdefault("rewards", 0)
     now = datetime.now(ET)
     today = now.date()
-    state["start"] = GAME_START
+    state["start"] = MONEY_START
     for d in [d for d in state["days"] if d < GAME_START]:  # drop test days from before the start
         state["xp"] -= state["days"].pop(d)["xp"]
     url = os.environ.get("GAME_ICS_URL", "").strip()
@@ -452,8 +453,8 @@ def main():
     print(f"Game: {len(stats)} STATS days found, {len(changed)} new/changed, total {state['xp']} XP")
     new_level = level_of(state["xp"])[0][1]
     names = [n for _, n in LEVELS]
-    if names.index(new_level) > names.index(prev_level):
-        for lv in names[names.index(prev_level) + 1: names.index(new_level) + 1]:
+    if today.isoformat() >= MONEY_START:  # level-ups reached in the test week pay out when money starts
+        for lv in names[1: names.index(new_level) + 1]:
             if lv in state.setdefault("levelsPaid", []):
                 continue
             amt = LEVEL_REWARD.get(lv, 0)
