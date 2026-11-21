@@ -59,6 +59,16 @@ jobs:
           MTG_NEWS_WEBHOOK_URL: ${{ secrets.MTG_NEWS_WEBHOOK_URL }}
         run: python3 rss_bot.py
 
+      - name: Game (XP, scoreboard, meal plan)
+        continue-on-error: true
+        env:
+          GAME_ICS_URL: ${{ secrets.GAME_ICS_URL }}
+          GAME_WEBHOOK_URL: ${{ secrets.GAME_WEBHOOK_URL }}
+          MEALPLAN_WEBHOOK_URL: ${{ secrets.MEALPLAN_WEBHOOK_URL }}
+        run: |
+          pip install -q recurring-ical-events || echo "iCal libraries unavailable"
+          python3 game_bot.py
+
       - name: Post hub (today + shiny dex)
         continue-on-error: true
         env:
@@ -116,7 +126,7 @@ jobs:
           git config user.name "spoiler-bot"
           git config user.email "spoiler-bot@users.noreply.github.com"
           git add seen.json
-          for f in posted_deals.json deals_thread.txt arena_seen.json arena_thread.txt pogo_seen.json free_games_seen.json trophies_state.json rss_seen.json mtgcompare_seen.json hub_state.json; do
+          for f in posted_deals.json deals_thread.txt arena_seen.json arena_thread.txt pogo_seen.json free_games_seen.json trophies_state.json rss_seen.json mtgcompare_seen.json hub_state.json game_state.json; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
           git diff --cached --quiet || (git commit -m "Update seen cards" && git push)
