@@ -51,6 +51,13 @@ jobs:
           FREE_GAMES_WEBHOOK_URL: ${{ secrets.FREE_GAMES_WEBHOOK_URL }}
         run: python3 free_games_bot.py
 
+      - name: Post news feeds
+        continue-on-error: true
+        env:
+          GAMING_NEWS_WEBHOOK_URL: ${{ secrets.GAMING_NEWS_WEBHOOK_URL }}
+          GUNPLA_NEWS_WEBHOOK_URL: ${{ secrets.GUNPLA_NEWS_WEBHOOK_URL }}
+        run: python3 rss_bot.py
+
       - name: Post new trophies
         continue-on-error: true
         env:
@@ -89,7 +96,7 @@ jobs:
           git config user.name "spoiler-bot"
           git config user.email "spoiler-bot@users.noreply.github.com"
           git add seen.json
-          for f in posted_deals.json deals_thread.txt arena_seen.json arena_thread.txt pogo_seen.json free_games_seen.json trophies_state.json; do
+          for f in posted_deals.json deals_thread.txt arena_seen.json arena_thread.txt pogo_seen.json free_games_seen.json trophies_state.json rss_seen.json; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
           git diff --cached --quiet || (git commit -m "Update seen cards" && git push)
