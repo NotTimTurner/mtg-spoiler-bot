@@ -65,6 +65,7 @@ jobs:
           GAME_ICS_URL: ${{ secrets.GAME_ICS_URL }}
           GAME_WEBHOOK_URL: ${{ secrets.GAME_WEBHOOK_URL }}
           MEALPLAN_WEBHOOK_URL: ${{ secrets.MEALPLAN_WEBHOOK_URL }}
+          GUIDES_WEBHOOK_URL: ${{ secrets.GUIDES_WEBHOOK_URL }}
         run: |
           pip install -q recurring-ical-events || echo "iCal libraries unavailable"
           python3 game_bot.py
