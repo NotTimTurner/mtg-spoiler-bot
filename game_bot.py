@@ -673,6 +673,62 @@ def day_money_post(d, items, amt, old):
             "color": 0x43A047 if amt > 0 else (0xFBC02D if amt == 0 else 0xE53935)}
 
 
+# ---- hobby quests (XP only, no dollars): PlayStation trophies + Gunpla build stages ----
+TROPHY_XP = {"bronze": 2, "silver": 5, "gold": 10, "platinum": 100}
+GUNPLA_STAGE_XP = {"built": 40, "panel": 10, "decals": 10, "topcoat": 15}
+GUNPLA_STAGE_NAME = {"built": "built", "panel": "panel lines", "decals": "decals", "topcoat": "top coat"}
+GUNPLA_GRADE_MULT = {"SD": 0.75, "EG": 0.75, "HG": 1, "RG": 1.5, "MG": 2, "PG": 4}
+
+
+def read_builds(url):
+    """GUNPLA events in the mailbox calendar -> {key: (kit, grade, stage)}. A stage only counts with a photo."""
+    import icalendar
+    import recurring_ical_events
+    cal = icalendar.Calendar.from_ical(get(url))
+    start = datetime.combine(date.fromisoformat(GAME_START), datetime.min.time(), ET)
+    out = {}
+    for ev in recurring_ical_events.of(cal).between(start, datetime.now(ET) + timedelta(days=2)):
+        if not str(ev.get("SUMMARY", "")).strip().upper().startswith("GUNPLA"):
+            continue
+        body = str(ev.get("DESCRIPTION", "") or "")
+        try:
+            j = json.loads(body[body.index("{"): body.rindex("}") + 1])
+            kit, grade, stage = str(j["kit"]).strip()[:60], str(j.get("grade", "HG")).upper(), str(j["stage"]).lower()
+        except (ValueError, KeyError, TypeError, AttributeError):
+            continue
+        if kit and stage in GUNPLA_STAGE_XP and j.get("photo"):
+            out[f"{kit.lower()}|{stage}"] = (kit, grade, stage)
+    return out
+
+
+def hobby_quests(state, url):
+    """Keep hobby XP matching the trophies and Gunpla stages on record (adds new ones, removes deleted stages). Returns lines to post."""
+    hob = state.setdefault("hobby", {})
+    hob.setdefault("trophies", {}); hob.setdefault("builds", {})
+    notes = []
+    tfile = HERE / "trophies_state.json"
+    if tfile.exists():
+        for t in json.loads(tfile.read_text()).get("week", []):
+            at, typ = str(t.get("at", "")), str(t.get("type", "")).lower()
+            key = f"{t.get('game', '')}|{typ}|{at}"
+            if at[:10] >= GAME_START and typ in TROPHY_XP and key not in hob["trophies"]:
+                hob["trophies"][key] = TROPHY_XP[typ]
+                state["xp"] += TROPHY_XP[typ]
+                notes.append(f"\U0001F3C6 +{TROPHY_XP[typ]} XP {typ} trophy ({t.get('game', '')})")
+        hob["trophies"] = dict(list(hob["trophies"].items())[-400:])
+    builds = read_builds(url)
+    for key, (kit, grade, stage) in builds.items():
+        if key not in hob["builds"]:
+            xp = round(GUNPLA_STAGE_XP[stage] * GUNPLA_GRADE_MULT.get(grade, 1))
+            hob["builds"][key] = xp
+            state["xp"] += xp
+            notes.append(f"\U0001F916 +{xp} XP Gunpla: {kit} ({grade}) {GUNPLA_STAGE_NAME[stage]}")
+    for key in [k for k in hob["builds"] if k not in builds]:
+        state["xp"] -= hob["builds"].pop(key)
+        notes.append(f"Removed a Gunpla stage ({key.replace('|', ', ')})")
+    return notes[:7] + ([f"...and {len(notes) - 7} more"] if len(notes) > 7 else [])
+
+
 def main():
     state = json.loads(STATE_FILE.read_text()) if STATE_FILE.exists() else {}
     state.setdefault("days", {}); state.setdefault("xp", 0); state.setdefault("posted", [])
@@ -776,6 +832,11 @@ def main():
 
     msgs = settle(state, weights, today, fit)
     notes = apply_moves(state, moves)
+    try:  # hobby quests (XP only); never allowed to break the game
+        if not os.environ.get("GAME_TEST_STATS"):
+            notes += hobby_quests(state, url)
+    except Exception as ex:
+        print(f"Game: hobby quests failed ({type(ex).__name__}: {str(ex)[:120]})")
     print(f"Game: {len(stats)} STATS days, {len(changed)} new/changed, {state['xp']} XP, "
           f"balance {usd(balance(state))}, owed ${owed(state):g}, {len(msgs)} money events")
 
