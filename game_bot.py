@@ -675,8 +675,8 @@ def day_money_post(d, items, amt, old):
 
 # ---- hobby quests (XP only, no dollars): PlayStation trophies + Gunpla build stages ----
 TROPHY_XP = {"bronze": 2, "silver": 5, "gold": 10, "platinum": 100}
-GUNPLA_STAGE_XP = {"built": 40, "panel": 10, "decals": 10, "topcoat": 15}
-GUNPLA_STAGE_NAME = {"built": "built", "panel": "panel lines", "decals": "decals", "topcoat": "top coat"}
+GUNPLA_STAGE_XP = {"built": 40, "panel": 10, "decals": 10, "topcoat": 15, "section": 5}
+GUNPLA_STAGE_NAME = {"built": "built", "panel": "panel lines", "decals": "decals", "topcoat": "top coat", "section": "decal section"}
 GUNPLA_GRADE_MULT = {"SD": 0.75, "EG": 0.75, "HG": 1, "RG": 1.5, "MG": 2, "PG": 4}
 
 
@@ -697,7 +697,10 @@ def read_builds(url):
         except (ValueError, KeyError, TypeError, AttributeError):
             continue
         if kit and stage in GUNPLA_STAGE_XP and j.get("photo"):
-            out[f"{kit.lower()}|{stage}"] = (kit, grade, stage)
+            part = str(j.get("part", "")).strip()[:30]
+            if stage == "section" and (not part or sum(1 for k in out if k.startswith(kit.lower() + "|section|")) >= 10):
+                continue  # a decal section needs a name; at most 10 sections per kit
+            out[f"{kit.lower()}|{stage}" + (f"|{part.lower()}" if stage == "section" else "")] = (kit + (f" / {part}" if stage == "section" else ""), grade, stage)
     return out
 
 
