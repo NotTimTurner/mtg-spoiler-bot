@@ -30,15 +30,15 @@
   "2026-11-21|8",
   "2026-11-21|9"
  ],
- "boardHour": "2026-11-22 06",
+ "boardHour": "2026-11-22 07",
  "fitbit": {
   "ok": true,
-  "checked": "2026-11-22T06:45-05:00",
-  "today_steps": 0
+  "checked": "2026-11-22T07:00-05:00",
+  "today_steps": null
  },
  "board": {
   "date": "2026-11-22",
-  "asOf": "Sun 6:45 AM",
+  "asOf": "Sun 7:00 AM",
   "testWeek": true,
   "practiceWeek": 0,
   "balance": 0,
@@ -54,12 +54,12 @@
   "levelSpan": 300,
   "nextReward": 10,
   "boss": "\ud83d\udc09 Sat Fat Dragon 0/5",
-  "steps": 0,
-  "stepsAt": "06:45",
+  "steps": null,
+  "stepsAt": "07:00",
   "stepTarget": 10000,
   "fitWalk": false,
   "fitLift": false,
-  "pedalMin": 60,
+  "pedalMin": 0,
   "history": [
    {
     "d": "2026-10-25",
