@@ -34,7 +34,7 @@ DRY_RUN = os.environ.get("DRY_RUN") == "1"
 UA = "DiscordBot (https://github.com/NotTimTurner/mtg-spoiler-bot, 1.0)"
 
 # ---- goals (Lose It goals, Oct 30 2026) ----
-GOALS = {"protein": 140, "sat_fat": 15, "sugar": 60, "fiber": 30, "chol": 200, "water": 100, "steps": 10000}
+GOALS = {"protein": 140, "sat_fat": 15, "carbs": 180, "sugar": 60, "fiber": 30, "chol": 200, "water": 100, "steps": 10000}
 
 # ---- workout plan: 3 lifts after work (Mon/Wed/Fri); pedal only to catch up on steps ----
 LIFT_DAYS = {0: "A", 2: "B", 4: "C"}  # weekday -> workout
@@ -80,7 +80,7 @@ def video(exercise):
 LEVELS = [(0, "SD"), (300, "HG"), (900, "RG"), (2000, "MG"), (4000, "PG"), (7000, "PG Unleashed")]
 BOSSES = {  # key: (name, emoji, stat checker, hits needed per week)
     "sat_fat": ("Sat Fat Dragon", "🐉", "sat fat under 15 g", 5),
-    "sugar": ("Sugar Slime", "🟢", "sugar under 60 g", 5),
+    "sugar": ("Sugar Slime", "🟢", "sugar under 60 g", 5), "carbs": ("Carb Kraken", "🦑", "carbs under 180 g", 5), "fiber": ("Fiber Hydra", "🌿", "fiber 30 g+", 5),
     "protein": ("Protein Golem", "🗿", "protein 140 g+", 5),
     "lift": ("Iron Titan", "🏋️", "all 3 lift days done", 3),
     "cal": ("Snack Goblin", "👺", "at or under your calorie budget", 5),
@@ -93,7 +93,7 @@ def hits(s):
         "cal": None if g("cal") is None or g("budget") is None else g("cal") <= g("budget"),
         "protein": None if g("protein") is None else g("protein") >= GOALS["protein"],
         "sat_fat": None if g("sat_fat") is None else g("sat_fat") < GOALS["sat_fat"],
-        "sugar": None if g("sugar") is None else g("sugar") < GOALS["sugar"],
+        "carbs": None if g("carbs") is None else g("carbs") < GOALS["carbs"], "sugar": None if g("sugar") is None else g("sugar") < GOALS["sugar"],
         "fiber": None if g("fiber") is None else g("fiber") >= GOALS["fiber"],
         "chol": None if g("chol") is None else g("chol") < GOALS["chol"],
         "water": None if g("water") is None else g("water") >= GOALS["water"],
@@ -107,7 +107,7 @@ def score(day, s):
     h = hits(s)
     xp, lines = 10, ["+10 logged"]
     table = [("cal", 20, "calories ≤ budget"), ("protein", 25, "protein 140 g+"), ("sat_fat", 20, "sat fat < 15 g"),
-             ("sugar", 10, "sugar < 60 g"), ("fiber", 10, "fiber 30 g+"), ("chol", 10, "cholesterol < 200 mg"),
+             ("carbs", 10, "carbs < 180 g"), ("fiber", 10, "fiber 30 g+"),
              ("water", 10, "water 100 oz+"), ("steps", 15, "10k steps"), ("pedal", 10, "pedal session")]
     for k, pts, label in table:
         if h[k]:
@@ -121,7 +121,7 @@ def score(day, s):
     if s.get("workout"):
         pts = 40 if day.weekday() in LIFT_DAYS else 20
         xp += pts; lines.append(f"+{pts} workout" + ("" if day.weekday() in LIFT_DAYS else " (bonus day)"))
-    if all(h[k] for k in ("cal", "protein", "sat_fat", "sugar")):
+    if all(h[k] for k in ("cal", "protein", "sat_fat", "carbs")):
         xp += 25; lines.append("+25 PERFECT DAY")
     return xp, h, lines
 
@@ -151,7 +151,7 @@ def pick_boss(state, monday):
     if not prev:
         return "sat_fat"
     rates = {}
-    for k in BOSSES:
+    for k in [b for b in BOSSES if b != "sugar"]:  # sugar retired Nov 22 (carbs + fiber now)
         vals = [state["days"][d]["hits"].get(k) for d in prev]
         vals = [v for v in vals if v is not None]
         rates[k] = (sum(vals) / len(vals)) if vals else 1.0
@@ -350,8 +350,8 @@ def day_post(day, s, xp, h, lines):
         return f"{'✅' if h[k] else '❌'} {label} {val}{unit}"
     parts = [mark("cal", "calories", f"{s.get('cal')}/{s.get('budget')}"),
              mark("protein", "protein", s.get("protein"), " g"), mark("sat_fat", "sat fat", s.get("sat_fat"), " g"),
-             mark("sugar", "sugar", s.get("sugar"), " g"), mark("fiber", "fiber", s.get("fiber"), " g"),
-             mark("chol", "cholesterol", s.get("chol"), " mg"), mark("water", "water", s.get("water"), " oz"),
+             mark("carbs", "carbs", s.get("carbs"), " g"), mark("fiber", "fiber", s.get("fiber"), " g"),
+             mark("water", "water", s.get("water"), " oz"),
              mark("steps", "steps", f"{s.get('steps'):,}" if s.get("steps") is not None else None),
              ("✅ workout " + WORKOUTS.get(s["workout"], (s["workout"],))[0]) if s.get("workout") else
              ("❌ lift day missed" if day.weekday() in LIFT_DAYS else None),
@@ -395,7 +395,8 @@ def split_markdown(text, limit=3900):
 
 # ---- real-money missions (1 credit = $1; Tim moves real money himself) ----
 GAME_START = "2026-11-23"   # XP counts from here
-MONEY_START = "2026-11-30"  # dollars count from here (Nov 23-29 = test week, shown as practice $)
+MONEY_START = "2026-11-23"  # dollars count from here (Tim, Nov 22: real money from the first day)
+PENALTY_START = "2026-11-30"  # misses cost $0 before this (grace week Nov 23-29; wins still pay)
 DAILY = [  # key, label, pay, miss
     ("log", "log food", 1, 1),
     ("cal", "calories ≤ budget", 1, 1),
@@ -407,7 +408,7 @@ LIFT_PAY = (3, 3)
 COOK_EXTRA_PAY = (1, 1)      # Wednesday: cook extra so Daisy has Thursday lunch
 SAT_ACTIVITY_PAY = 3         # Saturday long walk / activity (or 12k+ steps); no penalty
 SAT_STEPS = 12000
-MEAL_PREP_PAY = (3, 3)       # Sunday: Daisy's Mon/Tue lunches + Mon/Tue dinners
+MEAL_PREP_PAY = (3, 3)       # Sunday: Mon/Tue lunches (Daisy + Tim)
 WEIGHT_PAY = (4, 2)          # weekly average weight down / up vs last week
 PERFECT_WEEK = 5
 LEVEL_REWARD = {"HG": 10, "RG": 15, "MG": 25, "PG": 40, "PG Unleashed": 75}
@@ -419,12 +420,12 @@ FORFEIT_AFTER = 3            # this many busted weeks in a row cancels the next 
 REMINDERS = [
     ((0, 1, 2, 3, 4), "12:00", "🍽️ Lunch hour: log breakfast + lunch in Lose It, aim for 40 g protein, take a 10-min walk."),
     ((0,), "17:00", "🏋️ Work's done. **Lift A: Push** when Daisy's home (~5:30). +$3 / −$3"),
-    ((1,), "17:00", "🚶 Work's done. Daisy's home ~7:30: take a walk for steps. Dinner is from Sunday prep."),
+    ((1,), "17:00", "🚶 Work's done. Daisy's home ~7:30: take a walk for steps."),
     ((2,), "17:00", "🏋️ Work's done. **Lift B: Legs** tonight (+$3 / −$3), and **cook extra** so Daisy has Thursday lunch (+$1 / −$1)."),
     ((3,), "17:00", "🚶 Work's done. Daisy's home ~6:30: take a walk for steps."),
     ((4,), "17:00", "🏋️ Work's done. **Lift C: Pull** (Daisy's home from ~4). +$3 / −$3"),
     ((5,), "09:00", "🌳 Fun day: long walk or an activity with Daisy (+$3), then lunch or dinner out. Log it in Lose It."),
-    ((6,), "10:00", "🥡 Meal prep day: Daisy's Mon/Tue lunches + Mon/Tue dinners. +$3 / −$3"),
+    ((6,), "10:00", "🥡 Meal prep day: Mon/Tue lunches for you and Daisy. +$3 / −$3"),
     ((5, 6), "17:00", ""),  # weekend: just the 5 PM step check
     ((0, 1, 2, 3, 4, 5, 6), "21:00", "📝 Log the rest of today in Lose It before bed (logging is +$1, and no log costs every food mission)."),
 ]
@@ -457,7 +458,7 @@ def day_missions(day, s, doubled=False, f=None):
     fl = (f or {}).get("flags", {})
 
     def m(label, ok, pay, miss):
-        out.append((label, ok, pay if ok else -miss * mult))
+        out.append((label, ok, pay if ok else (-miss * mult if day.isoformat() >= PENALTY_START else 0)))
     for key, label, pay, miss in DAILY:
         if key == "steps":
             m(label + (" ⌚" if f and "steps" in f else ""), (steps or 0) >= GOALS["steps"], pay, miss)
@@ -545,7 +546,7 @@ def settle(state, stats, today, fit=None):
                 if a < b:
                     amt += WEIGHT_PAY[0]; lines.append(f"⚖️ Weekly average down {b - a:.1f} lb {fmt(WEIGHT_PAY[0])}")
                 elif a > b:
-                    pen = WEIGHT_PAY[1] * (BUST_MULT if busted_now(state) else 1)
+                    pen = (WEIGHT_PAY[1] if sun.isoformat() >= PENALTY_START else 0) * (BUST_MULT if busted_now(state) else 1)
                     amt -= pen; lines.append(f"⚖️ Weekly average up {a - b:.1f} lb {fmt(-pen)}")
             led["week:" + wk] = {"amount": amt, "date": sun.isoformat(), "note": "weekly bonuses"}
             week_total = sum(e["amount"] for k2, e in led.items() if k2.startswith("day:") and e["date"] in days) + amt
@@ -634,12 +635,12 @@ def board(state, today):
         top = (f"🧪 **Test week**: money starts Mon Nov 30.\nPractice earnings this week: **{fmt(wk)}**")
     else:
         wk = sum(e["amount"] for k, e in state["ledger"].items() if k.startswith("day:") and e["date"] in wk_days)
-        top = f"💵 Balance **{usd(bal)}** · this week {fmt(wk)}"
+        top = f"💵 Balance **{usd(bal)}** · this week {fmt(wk)}" + ("\n🛡️ Grace week: misses cost $0 until Mon Nov 30" if today.isoformat() < PENALTY_START else "")
     if busted_now(state):
         b = next(b for b in state["busts"] if not b.get("paid"))
         top = (f"🚨 **BUSTED** 🚨 Move **${owed(state):g}** to savings by {date.fromisoformat(b['due']):%a %b} "
                f"{date.fromisoformat(b['due']).day}\nNo Magic spending · penalties doubled\n" + top)
-    mult = BUST_MULT if busted_now(state) else 1
+    mult = (BUST_MULT if busted_now(state) else 1) if today.isoformat() >= PENALTY_START else 0
     todays = []
     for _, label, pay, miss in DAILY:
         todays.append(f"⬜ {label} `+${pay}/−${miss * mult}`")
@@ -651,7 +652,7 @@ def board(state, today):
     if wd == 5:
         todays.append(f"⬜ long walk or activity `+${SAT_ACTIVITY_PAY}`")
     if wd == 6:
-        todays.append(f"⬜ meal prep (Daisy's Mon/Tue lunches + dinners) `+${MEAL_PREP_PAY[0]}/−${MEAL_PREP_PAY[1] * mult}`")
+        todays.append(f"⬜ meal prep (Mon/Tue lunches) `+${MEAL_PREP_PAY[0]}/−${MEAL_PREP_PAY[1] * mult}`")
     fsteps = state.get("fitbit", {}).get("today_steps")
     if fsteps is not None:
         todays.append(f"⌚ steps so far: **{fsteps:,}** / {GOALS['steps']:,}")
