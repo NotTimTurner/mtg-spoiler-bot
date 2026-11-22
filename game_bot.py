@@ -317,6 +317,18 @@ def read_fitbit(since, today):
         print(f"Nutrition test failed: {ex.code} " + " ".join(ex.read().decode("utf-8", "replace").split())[:300])
     except Exception as ex:
         print(f"Nutrition test failed: {type(ex).__name__}: {str(ex)[:200]}")
+    try:  # TEST ONLY (Nov 22): can the bot read Fitbit sleep? Read and print, nothing else
+        sf = urllib.parse.quote(f'sleep.interval.civil_end_time >= "{(today - timedelta(days=3)).isoformat()}"')
+        sl = health_api(tok, f"dataTypes/sleep/dataPoints?filter={sf}").get("dataPoints", [])
+        for p in sl:
+            z = p.get("sleep", {})
+            print("Sleep test: " + json.dumps({"interval": z.get("interval"), "type": z.get("type"), "metadata": z.get("metadata"), "summary": {a: b for a, b in z.get("summary", {}).items() if a != "stagesSummary"}, "keys": sorted(z)}, sort_keys=True)[:900])
+        if not sl:
+            print("Sleep test: no data")
+    except urllib.error.HTTPError as ex:
+        print(f"Sleep test failed: {ex.code} " + " ".join(ex.read().decode("utf-8", "replace").split())[:300])
+    except Exception as ex:
+        print(f"Sleep test failed: {type(ex).__name__}: {str(ex)[:200]}")
     print(f"Game: Fitbit {start}..{today}: {sum('steps' in v for v in fit.values())} step days, "
           f"{sum('weight' in v for v in fit.values())} weigh-ins, {sum(len(v.get('exercises', [])) for v in fit.values())} workouts")
     return fit
