@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-23T20:00:47.572Z",
+ "lastCheck": "2026-11-23T21:00:57.321Z",
  "authWarned": false,
  "lastRecap": "2026-11-22",
  "week": [
@@ -62,14 +62,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "bronze",
    "at": "2026-11-23T19:19:11Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "silver",
+   "at": "2026-11-23T20:37:41Z"
   }
  ],
  "lastTrophy": {
   "game": "FINAL FANTASY RESONANCE",
-  "name": "Conscience Renewed",
-  "type": "bronze",
-  "at": "2026-11-23T19:19:11Z"
+  "name": "Legendary Arms",
+  "type": "silver",
+  "at": "2026-11-23T20:37:41Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR58353_00|30|59|2026-11-23T19:19:11Z"
+ "nowPlayingSig": "NPWR58353_00|31|62|2026-11-23T20:37:41Z"
 }
