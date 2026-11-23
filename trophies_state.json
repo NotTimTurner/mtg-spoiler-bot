@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-23T18:00:47.663Z",
+ "lastCheck": "2026-11-23T19:00:59.673Z",
  "authWarned": false,
  "lastRecap": "2026-11-22",
  "week": [
@@ -52,14 +52,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "silver",
    "at": "2026-11-23T15:46:50Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "bronze",
+   "at": "2026-11-23T18:51:40Z"
   }
  ],
  "lastTrophy": {
   "game": "FINAL FANTASY RESONANCE",
-  "name": "The Weaponsmith",
-  "type": "silver",
-  "at": "2026-11-23T15:46:50Z"
+  "name": "Past Glory",
+  "type": "bronze",
+  "at": "2026-11-23T18:51:40Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR58353_00|28|56|2026-11-23T15:46:50Z"
+ "nowPlayingSig": "NPWR58353_00|29|57|2026-11-23T18:51:40Z"
 }
