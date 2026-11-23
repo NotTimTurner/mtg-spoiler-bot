@@ -9,17 +9,17 @@
   "2026-11-22"
  ],
  "boss": {
-  "week": "2026-11-16",
+  "week": "2026-11-23",
   "key": "sat_fat"
  },
  "boardId": "1573737384003244195",
  "boardDay": "2026-11-21",
  "todayLine": {
-  "date": "2026-11-22",
+  "date": "2026-11-23",
   "level": "SD \u00b7 0 XP",
   "yesterday": null,
-  "workout": "Rest day (walk; pedal if under 10k)",
-  "money": "test week (money starts Nov 30)",
+  "workout": "Push (bench day): Bench press 4\u00d76\u20138 \u00b7 Barbell overhead press 3\u00d78 \u00b7 DB flyes 3\u00d712 \u00b7 DB overhead triceps extension 3\u00d712 \u00b7 Plank 3\u00d730 s",
+  "money": "$0 balance",
   "boss": "\ud83d\udc09 Sat Fat Dragon 0/5"
  },
  "guideId": "1573752484277780714",
@@ -34,16 +34,16 @@
   "2026-11-22|8",
   "2026-11-22|9"
  ],
- "boardHour": "2026-11-22 23",
+ "boardHour": "2026-11-23 00",
  "fitbit": {
   "ok": true,
-  "checked": "2026-11-22T23:45-05:00",
-  "today_steps": 8540
+  "checked": "2026-11-23T00:00-05:00",
+  "today_steps": null
  },
  "board": {
-  "date": "2026-11-22",
-  "asOf": "Sun 11:45 PM",
-  "testWeek": true,
+  "date": "2026-11-23",
+  "asOf": "Mon 12:00 AM",
+  "testWeek": false,
   "practiceWeek": 0,
   "balance": 0,
   "week": 0,
@@ -58,17 +58,13 @@
   "levelSpan": 300,
   "nextReward": 10,
   "boss": "\ud83d\udc09 Sat Fat Dragon 0/5",
-  "steps": 8540,
-  "stepsAt": "23:45",
+  "steps": null,
+  "stepsAt": "00:00",
   "stepTarget": 10000,
   "fitWalk": false,
   "fitLift": false,
-  "pedalMin": 15,
+  "pedalMin": 0,
   "history": [
-   {
-    "d": "2026-10-25",
-    "amt": null
-   },
    {
     "d": "2026-10-26",
     "amt": null
@@ -176,6 +172,10 @@
    {
     "d": "2026-11-21",
     "amt": null
+   },
+   {
+    "d": "2026-11-22",
+    "amt": null
    }
   ],
   "weights": [
@@ -196,5 +196,13 @@
  "hobby": {
   "trophies": {},
   "builds": {}
- }
+ },
+ "lastBoss": "sat_fat",
+ "bossLog": [
+  {
+   "week": "2026-11-16",
+   "key": "sat_fat",
+   "won": false
+  }
+ ]
 }
