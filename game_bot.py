@@ -912,7 +912,7 @@ def main():
             for i in range(0, len(chunks), 10):
                 embeds = [{"description": c, "color": 0x43A047} for c in chunks[i:i + 10]]
                 if i == 0:
-                    nd = date.fromisoformat(d) + timedelta(days=(7 - date.fromisoformat(d).weekday()) % 7)
+                    nd = date.fromisoformat(d) + timedelta(days=(6 - date.fromisoformat(d).weekday()) % 7)  # food week runs Sunday-Saturday: the first Sunday on or after the plan's date
                     embeds[0]["title"] = f"🍽️ Meal plan, week of {nd:%b} {nd.day}"
                 send(plan_hook, {"username": "Meal Plan", "embeds": embeds, "allowed_mentions": {"parse": []}})
             state["plans"] = (state["plans"] + [d])[-20:]
