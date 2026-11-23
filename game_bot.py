@@ -39,8 +39,8 @@ GOALS = {"protein": 140, "sat_fat": 15, "carbs": 180, "sugar": 60, "fiber": 30, 
 # ---- workout plan: 3 lifts after work (Mon/Wed/Fri); pedal only to catch up on steps ----
 LIFT_DAYS = {0: "A", 2: "B", 4: "C"}  # weekday -> workout
 WORKOUTS = {
-    "A": ("Push (bench day)", ["Bench press 4×6–8", "Barbell overhead press 3×8", "DB flyes 3×12",
-                               "DB overhead triceps extension 3×12", "Plank 3×30 s"]),
+    "A": ("Push (bench day)", ["Bench press 4×6–8", "DB lateral raise 3×12", "DB flyes 3×12",
+                               "DB lying triceps extension 3×12", "Plank 3×30 s"]),
     "B": ("Legs", ["DB goblet squat 4×10", "Barbell Romanian deadlift 3×8", "DB reverse lunge 3×10/leg",
                    "DB calf raise 3×15", "Dead bug 3×10/side"]),
     "C": ("Pull", ["Barbell bent-over row 4×8", "One-arm DB row 3×10/side", "Barbell deadlift 3×5 (moderate)",
