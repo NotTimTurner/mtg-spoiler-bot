@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-23T14:00:43.204Z",
+ "lastCheck": "2026-11-23T15:00:51.302Z",
  "authWarned": false,
  "lastRecap": "2026-11-22",
  "week": [
@@ -42,14 +42,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "silver",
    "at": "2026-11-23T13:33:39Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "bronze",
+   "at": "2026-11-23T14:41:24Z"
   }
  ],
  "lastTrophy": {
   "game": "FINAL FANTASY RESONANCE",
-  "name": "The Sovereigns of the Planet",
-  "type": "silver",
-  "at": "2026-11-23T13:33:39Z"
+  "name": "Ancient Artifact",
+  "type": "bronze",
+  "at": "2026-11-23T14:41:24Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR58353_00|26|51|2026-11-23T13:33:39Z"
+ "nowPlayingSig": "NPWR58353_00|27|53|2026-11-23T14:41:24Z"
 }
