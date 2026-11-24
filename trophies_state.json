@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-24T18:00:53.726Z",
+ "lastCheck": "2026-11-24T19:00:53.730Z",
  "authWarned": false,
  "lastRecap": "2026-11-22",
  "week": [
@@ -92,14 +92,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "gold",
    "at": "2026-11-24T16:48:17Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "silver",
+   "at": "2026-11-24T18:26:53Z"
   }
  ],
  "lastTrophy": {
   "game": "FINAL FANTASY RESONANCE",
-  "name": "Resonance Rapid Fire",
-  "type": "gold",
-  "at": "2026-11-24T16:48:17Z"
+  "name": "Keep Them on Their Toes",
+  "type": "silver",
+  "at": "2026-11-24T18:26:53Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR58353_00|35|75|2026-11-24T16:48:17Z"
+ "nowPlayingSig": "NPWR58353_00|36|78|2026-11-24T18:26:53Z"
 }
