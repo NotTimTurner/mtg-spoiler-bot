@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-24T16:00:46.140Z",
+ "lastCheck": "2026-11-24T17:00:53.868Z",
  "authWarned": false,
  "lastRecap": "2026-11-22",
  "week": [
@@ -87,14 +87,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "bronze",
    "at": "2026-11-24T14:20:01Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "gold",
+   "at": "2026-11-24T16:48:17Z"
   }
  ],
  "lastTrophy": {
   "game": "FINAL FANTASY RESONANCE",
-  "name": "Struck Gold",
-  "type": "bronze",
-  "at": "2026-11-24T14:20:01Z"
+  "name": "Resonance Rapid Fire",
+  "type": "gold",
+  "at": "2026-11-24T16:48:17Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR58353_00|34|66|2026-11-24T14:20:01Z"
+ "nowPlayingSig": "NPWR58353_00|35|75|2026-11-24T16:48:17Z"
 }
