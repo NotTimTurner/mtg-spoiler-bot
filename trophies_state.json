@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-24T20:00:44.195Z",
+ "lastCheck": "2026-11-24T21:00:58.406Z",
  "authWarned": false,
  "lastRecap": "2026-11-22",
  "week": [
@@ -102,14 +102,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "silver",
    "at": "2026-11-24T20:00:42Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "gold",
+   "at": "2026-11-24T20:56:44Z"
   }
  ],
  "lastTrophy": {
   "game": "FINAL FANTASY RESONANCE",
-  "name": "Career Fighter",
-  "type": "silver",
-  "at": "2026-11-24T20:00:42Z"
+  "name": "My Name Is Ultima...",
+  "type": "gold",
+  "at": "2026-11-24T20:56:44Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR58353_00|37|81|2026-11-24T20:00:42Z"
+ "nowPlayingSig": "NPWR58353_00|38|90|2026-11-24T20:56:44Z"
 }
