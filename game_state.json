@@ -11,12 +11,12 @@
     "fiber": false,
     "chol": null,
     "water": null,
-    "steps": null,
+    "steps": false,
     "lift": false,
     "pedal": null,
     "logged": true
    },
-   "sig": "{\"budget\": 1852, \"cal\": 1774, \"carbs\": 152, \"fiber\": 17.4, \"protein\": 155, \"sat_fat\": 14.5}"
+   "sig": "{\"budget\": 1852, \"cal\": 1774, \"carbs\": 152, \"fiber\": 17.4, \"protein\": 155, \"sat_fat\": 14.5, \"steps\": 5410}"
   }
  },
  "xp": 149,
@@ -65,13 +65,13 @@
  ],
  "boardHour": "2026-11-24 08",
  "fitbit": {
-  "ok": false,
-  "checked": "2026-11-24T08:00-05:00",
-  "today_steps": 0
+  "ok": true,
+  "checked": "2026-11-24T08:30-05:00",
+  "today_steps": 126
  },
  "board": {
   "date": "2026-11-24",
-  "asOf": "Tue 8:15 AM",
+  "asOf": "Tue 8:30 AM",
   "testWeek": false,
   "practiceWeek": 0,
   "balance": 4,
@@ -87,8 +87,8 @@
   "levelSpan": 300,
   "nextReward": 10,
   "boss": "\ud83d\udc09 Sat Fat Dragon 1/5",
-  "steps": 0,
-  "stepsAt": "08:00",
+  "steps": 126,
+  "stepsAt": "08:30",
   "stepTarget": 10000,
   "fitWalk": false,
   "fitLift": false,
