@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-23T23:00:50.059Z",
+ "lastCheck": "2026-11-24T00:00:55.133Z",
  "authWarned": false,
  "lastRecap": "2026-11-22",
  "week": [
@@ -67,14 +67,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "silver",
    "at": "2026-11-23T20:37:41Z"
+  },
+  {
+   "game": "Grand Theft Auto VI",
+   "type": "bronze",
+   "at": "2026-11-23T23:52:01Z"
   }
  ],
  "lastTrophy": {
-  "game": "FINAL FANTASY RESONANCE",
-  "name": "Legendary Arms",
-  "type": "silver",
-  "at": "2026-11-23T20:37:41Z"
+  "game": "Grand Theft Auto VI",
+  "name": "Paradise Lost",
+  "type": "bronze",
+  "at": "2026-11-23T23:52:01Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR21085_00|2|2|2026-11-23T20:37:41Z"
+ "nowPlayingSig": "NPWR21085_00|3|4|2026-11-23T23:52:01Z"
 }
