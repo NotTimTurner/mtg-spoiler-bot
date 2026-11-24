@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-24T03:00:46.883Z",
+ "lastCheck": "2026-11-24T04:00:42.111Z",
  "authWarned": false,
  "lastRecap": "2026-11-22",
  "week": [
@@ -77,14 +77,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "bronze",
    "at": "2026-11-24T02:14:39Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "bronze",
+   "at": "2026-11-24T03:37:14Z"
   }
  ],
  "lastTrophy": {
   "game": "FINAL FANTASY RESONANCE",
-  "name": "Priceless Experience",
+  "name": "Aspiration’s End",
   "type": "bronze",
-  "at": "2026-11-24T02:14:39Z"
+  "at": "2026-11-24T03:37:14Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR58353_00|32|63|2026-11-24T02:14:39Z"
+ "nowPlayingSig": "NPWR58353_00|33|65|2026-11-24T03:37:14Z"
 }
