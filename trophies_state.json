@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-24T14:00:46.232Z",
+ "lastCheck": "2026-11-24T15:00:45.929Z",
  "authWarned": false,
  "lastRecap": "2026-11-22",
  "week": [
@@ -82,14 +82,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "bronze",
    "at": "2026-11-24T03:37:14Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "bronze",
+   "at": "2026-11-24T14:20:01Z"
   }
  ],
  "lastTrophy": {
   "game": "FINAL FANTASY RESONANCE",
-  "name": "Aspiration’s End",
+  "name": "Struck Gold",
   "type": "bronze",
-  "at": "2026-11-24T03:37:14Z"
+  "at": "2026-11-24T14:20:01Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR58353_00|33|65|2026-11-24T03:37:14Z"
+ "nowPlayingSig": "NPWR58353_00|34|66|2026-11-24T14:20:01Z"
 }
