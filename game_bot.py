@@ -100,6 +100,7 @@ def hits(s):
         "steps": None if g("steps") is None else g("steps") >= GOALS["steps"],
         "lift": bool(s.get("workout")),
         "pedal": None if g("pedal_min") is None else g("pedal_min") >= PEDAL_GOAL,
+        "pills": None if g("pills") is None else g("pills") >= 4,
     }
 
 
@@ -108,7 +109,7 @@ def score(day, s):
     xp, lines = 10, ["+10 logged"]
     table = [("cal", 20, "calories ≤ budget"), ("protein", 25, "protein 140 g+"), ("sat_fat", 20, "sat fat < 15 g"),
              ("carbs", 10, "carbs < 180 g"), ("fiber", 10, "fiber 30 g+"),
-             ("water", 10, "water 100 oz+"), ("steps", 15, "10k steps"), ("pedal", 10, "pedal session")]
+             ("water", 10, "water 100 oz+"), ("steps", 15, "10k steps"), ("pedal", 10, "pedal session"), ("pills", 5, "all 4 pills")]
     for k, pts, label in table:
         if h[k]:
             xp += pts; lines.append(f"+{pts} {label}")
@@ -842,6 +843,11 @@ def main():
             continue
         xp, h, lines = score(date.fromisoformat(d), s)
         h["logged"] = True
+        for hk, label in (("logged", "food log"), ("protein", "protein"), ("steps", "steps")):  # Nov 24: +20 XP each time a streak reaches a multiple of 7 days
+            if h.get(hk):
+                run = streak(state, hk, date.fromisoformat(d)) + 1
+                if run % 7 == 0:
+                    xp += 20; lines.append(f"+20 {run}-day {label} streak")
         state["xp"] += xp - (old["xp"] if old else 0)
         state["days"][d] = {"xp": xp, "hits": h, "sig": sig}
         changed.append((d, s, xp, h, lines, bool(old)))
@@ -955,6 +961,27 @@ def main():
                     for dd in [(today - timedelta(days=i)).isoformat() for i in range(28, 0, -1)]],
         "weights": [{"d": k, "lb": v} for k, v in state.get("weightLog", {}).items() if k >= (today - timedelta(days=60)).isoformat()],
     }
+    try:  # Nov 24: streaks and Strength/Agility totals for the Day page (display only)
+        state["board"]["streaks"] = {k: streak(state, hk, today) for k, hk in (
+            ("log", "logged"), ("cal", "cal"), ("protein", "protein"), ("sat_fat", "sat_fat"), ("carbs", "carbs"), ("fiber", "fiber"), ("steps", "steps"))}
+        num = lambda x: x if isinstance(x, (int, float)) and not isinstance(x, bool) else 0
+        tot, d0 = {"str": [0, 0], "agi": [0, 0]}, date.fromisoformat(GAME_START)
+        for i in range((today - d0).days + 1):  # [through yesterday, through today]
+            dd = d0 + timedelta(days=i)
+            s, f = stats.get(dd.isoformat(), {}), fit.get(dd.isoformat(), {})
+            fl = f.get("flags", {})
+            steps = num(f.get("steps")) or num(s.get("steps"))
+            agi = (int(steps >= 10000) + int(steps >= 12500)
+                   + int(bool(s.get("activity") or fl.get("activity") or (dd.weekday() == 5 and fit_walk(f))))
+                   + int(max(num(s.get("pedal_min")), num(fl.get("pedal_min"))) >= PEDAL_GOAL))
+            lift = 2 if (s.get("workout") or fl.get("workout") or fit_lift(f)) else 0
+            for j in (0, 1):
+                if j == 1 or dd < today:
+                    tot["agi"][j] += agi
+                    tot["str"][j] += lift
+        state["board"]["stats"] = tot
+    except Exception as ex:
+        print(f"Game: board extras failed ({type(ex).__name__}: {str(ex)[:120]})")
     if not DRY_RUN:
         STATE_FILE.write_text(json.dumps(state, indent=1) + "\n")
 
