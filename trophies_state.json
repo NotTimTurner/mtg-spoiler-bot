@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-24T02:01:05.266Z",
+ "lastCheck": "2026-11-24T03:00:46.883Z",
  "authWarned": false,
  "lastRecap": "2026-11-22",
  "week": [
@@ -72,14 +72,19 @@
    "game": "Grand Theft Auto VI",
    "type": "bronze",
    "at": "2026-11-23T23:52:01Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "bronze",
+   "at": "2026-11-24T02:14:39Z"
   }
  ],
  "lastTrophy": {
-  "game": "Grand Theft Auto VI",
-  "name": "Paradise Lost",
+  "game": "FINAL FANTASY RESONANCE",
+  "name": "Priceless Experience",
   "type": "bronze",
-  "at": "2026-11-23T23:52:01Z"
+  "at": "2026-11-24T02:14:39Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR21085_00|3|4|2026-11-23T23:52:01Z"
+ "nowPlayingSig": "NPWR58353_00|32|63|2026-11-24T02:14:39Z"
 }
