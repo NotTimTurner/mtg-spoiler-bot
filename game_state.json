@@ -11,12 +11,12 @@
     "fiber": false,
     "chol": null,
     "water": null,
-    "steps": false,
+    "steps": null,
     "lift": false,
     "pedal": null,
     "logged": true
    },
-   "sig": "{\"budget\": 1852, \"cal\": 1774, \"carbs\": 152, \"fiber\": 17.4, \"protein\": 155, \"sat_fat\": 14.5, \"steps\": 5410}"
+   "sig": "{\"budget\": 1852, \"cal\": 1774, \"carbs\": 152, \"fiber\": 17.4, \"protein\": 155, \"sat_fat\": 14.5}"
   }
  },
  "xp": 149,
@@ -65,13 +65,13 @@
  ],
  "boardHour": "2026-11-24 08",
  "fitbit": {
-  "ok": true,
+  "ok": false,
   "checked": "2026-11-24T08:00-05:00",
   "today_steps": 0
  },
  "board": {
   "date": "2026-11-24",
-  "asOf": "Tue 8:00 AM",
+  "asOf": "Tue 8:15 AM",
   "testWeek": false,
   "practiceWeek": 0,
   "balance": 4,
