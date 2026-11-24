@@ -1,8 +1,28 @@
 {
- "days": {},
- "xp": 39,
+ "days": {
+  "2026-11-23": {
+   "xp": 110,
+   "hits": {
+    "cal": true,
+    "protein": true,
+    "sat_fat": true,
+    "carbs": true,
+    "sugar": null,
+    "fiber": false,
+    "chol": null,
+    "water": null,
+    "steps": false,
+    "lift": false,
+    "pedal": null,
+    "logged": true
+   },
+   "sig": "{\"budget\": 1852, \"cal\": 1774, \"carbs\": 152, \"fiber\": 17.4, \"protein\": 155, \"sat_fat\": 14.5, \"steps\": 5410}"
+  }
+ },
+ "xp": 149,
  "posted": [
-  "2026-11-19"
+  "2026-11-19",
+  "2026-11-23"
  ],
  "plans": [
   "2026-11-21",
@@ -15,16 +35,22 @@
  "boardId": "1573737384003244195",
  "boardDay": "2026-11-21",
  "todayLine": {
-  "date": "2026-11-23",
-  "level": "SD \u00b7 39 XP",
-  "yesterday": null,
-  "workout": "Push (bench day): Bench press 4\u00d76\u20138 \u00b7 DB lateral raise 3\u00d712 \u00b7 DB flyes 3\u00d712 \u00b7 DB lying triceps extension 3\u00d712 \u00b7 Plank 3\u00d730 s",
-  "money": "$0 balance",
-  "boss": "\ud83d\udc09 Sat Fat Dragon 0/5"
+  "date": "2026-11-24",
+  "level": "SD \u00b7 149 XP",
+  "yesterday": 110,
+  "workout": "Rest day (walk; pedal if under 10k)",
+  "money": "$4 balance",
+  "boss": "\ud83d\udc09 Sat Fat Dragon 1/5"
  },
  "guideId": "1573752484277780714",
  "guideSig": "{\"allowed_mentions\": {\"parse\": []}, \"embeds\": [{\"color\": 16088064, \"description\": \"**Bench press** 4\\u00d76\\u20138 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Bench+press+proper+form)\\n**DB lateral raise** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+lateral+raise+proper+form)\\n**DB flyes** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+flyes+proper+form)\\n**DB lying triceps extension** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+lying+triceps+extension+proper+form)\\n**Plank** 3\\u00d730 s \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Plank+proper+form)\", \"title\": \"Monday \\u00b7 Push (bench day)\"}, {\"color\": 16088064, \"description\": \"**DB goblet squat** 4\\u00d710 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+goblet+squat+proper+form)\\n**Barbell Romanian deadlift** 3\\u00d78 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Barbell+Romanian+deadlift+proper+form)\\n**DB reverse lunge** 3\\u00d710/leg \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+reverse+lunge+proper+form)\\n**DB calf raise** 3\\u00d715 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+calf+raise+proper+form)\\n**Dead bug** 3\\u00d710/side \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Dead+bug+proper+form)\", \"title\": \"Wednesday \\u00b7 Legs\"}, {\"color\": 16088064, \"description\": \"**Barbell bent-over row** 4\\u00d78 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Barbell+bent-over+row+proper+form)\\n**One-arm DB row** 3\\u00d710/side \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+One-arm+dumbbell+row+proper+form)\\n**Barbell deadlift** 3\\u00d75 (moderate) \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+Barbell+deadlift+proper+form)\\n**DB rear-delt fly** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+rear-delt+fly+proper+form)\\n**DB curl** 3\\u00d712 \\u00b7 [\\u25b6 video](https://www.youtube.com/results?search_query=how+to+dumbbell+curl+proper+form)\", \"title\": \"Friday \\u00b7 Pull\"}, {\"color\": 4431943, \"description\": \"**Pedal exerciser** only on days you're under 10,000 steps at 5 PM; the 5 PM reminder says how long\\n**Warm up** 5 min easy pedal + 1 light set of the first lift\\n**Rest** 60\\u201390 s between sets\\n**Weight** pick one where the last 2 reps feel hard but your form stays clean; go up a little when every set feels easy\\n**Each of you** uses your own weights; do the sets together, taking turns\\nVideos are YouTube searches for a form tutorial, so pick one from a trusted trainer. Stop if anything hurts; this isn't medical advice.\", \"title\": \"Every day \\u00b7 steps, pedal + how-to\"}], \"username\": \"Workout Guides\"}",
- "ledger": {},
+ "ledger": {
+  "day:2026-11-23": {
+   "amount": 4,
+   "date": "2026-11-23",
+   "note": "missions"
+  }
+ },
  "practice": {},
  "movesSeen": [],
  "reminded": [
@@ -37,41 +63,37 @@
   "2026-11-23|1",
   "2026-11-23|9"
  ],
- "boardHour": "2026-11-23 23",
+ "boardHour": "2026-11-24 00",
  "fitbit": {
   "ok": true,
-  "checked": "2026-11-23T23:45-05:00",
-  "today_steps": 5410
+  "checked": "2026-11-24T00:00-05:00",
+  "today_steps": null
  },
  "board": {
-  "date": "2026-11-23",
-  "asOf": "Mon 11:45 PM",
+  "date": "2026-11-24",
+  "asOf": "Tue 12:00 AM",
   "testWeek": false,
   "practiceWeek": 0,
-  "balance": 0,
-  "week": 0,
-  "yesterday": null,
+  "balance": 4,
+  "week": 4,
+  "yesterday": 4,
   "busted": false,
   "owed": 0,
   "due": "",
   "level": "SD",
-  "xp": 39,
+  "xp": 149,
   "next": "HG",
-  "toNext": 261,
+  "toNext": 151,
   "levelSpan": 300,
   "nextReward": 10,
-  "boss": "\ud83d\udc09 Sat Fat Dragon 0/5",
-  "steps": 5410,
-  "stepsAt": "23:45",
+  "boss": "\ud83d\udc09 Sat Fat Dragon 1/5",
+  "steps": null,
+  "stepsAt": "00:00",
   "stepTarget": 10000,
   "fitWalk": false,
   "fitLift": false,
-  "pedalMin": 50,
+  "pedalMin": 0,
   "history": [
-   {
-    "d": "2026-10-26",
-    "amt": null
-   },
    {
     "d": "2026-10-27",
     "amt": null
@@ -179,6 +201,10 @@
    {
     "d": "2026-11-22",
     "amt": null
+   },
+   {
+    "d": "2026-11-23",
+    "amt": 4
    }
   ],
   "weights": [
