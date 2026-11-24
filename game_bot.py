@@ -746,6 +746,48 @@ def hobby_quests(state, url):
     return notes[:7] + ([f"...and {len(notes) - 7} more"] if len(notes) > 7 else [])
 
 
+# ---------- Philly sports (Nov 24): today's and tomorrow's games for the Day page's schedule ----------
+SPORTS = [("Flyers", "hockey/nhl"), ("Sixers", "basketball/nba"), ("Eagles", "football/nfl"), ("Phillies", "baseball/mlb")]
+
+
+def philly_games(state, now):
+    """Flyers / Sixers / Eagles / Phillies games in the next 7 days, from ESPN's public schedule feed (cached 6 hours)."""
+    cache = state.get("sports") or {}
+    try:
+        fresh = bool(cache.get("at")) and (now - datetime.fromisoformat(cache["at"])).total_seconds() < 6 * 3600
+    except (ValueError, TypeError):
+        fresh = False
+    if not fresh:
+        games, ok = [], 0
+        for nick, path in SPORTS:
+            try:
+                j = json.loads(get(f"https://site.api.espn.com/apis/site/v2/sports/{path}/teams/phi/schedule"))
+                ok += 1
+            except Exception as ex:
+                print(f"Game: {nick} schedule read failed ({type(ex).__name__})")
+                continue
+            for e in j.get("events", []):
+                try:
+                    when = datetime.fromisoformat(str(e["date"]).replace("Z", "+00:00")).astimezone(ET)
+                except (KeyError, ValueError):
+                    continue
+                if not 0 <= (when.date() - now.date()).days <= 7:
+                    continue
+                short = str(e.get("shortName", ""))
+                a, sep, b = short.partition(" @ ")
+                label = (f"{nick} at {b}" if a == "PHI" else f"{nick} vs {a}") if sep else f"{nick}: {short}"
+                comp = (e.get("competitions") or [{}])[0]
+                tv = [str((x.get("media") or {}).get("shortName", "")) for x in comp.get("broadcasts", [])]
+                tv = next((x for x in tv if "Phil" in x), "") or next((x for x in tv if x), "")
+                games.append({"d": when.date().isoformat(), "t": when.strftime("%H:%M") if e.get("timeValid", True) else "",
+                              "label": label, "tv": tv})
+        if ok:
+            cache = {"at": now.isoformat(timespec="minutes") if ok == len(SPORTS) else "", "games": sorted(games, key=lambda g: (g["d"], g["t"]))}
+            state["sports"] = cache
+            print(f"Game: sports ok, {len(games)} games in the next 7 days")
+    return cache.get("games", [])
+
+
 def main():
     state = json.loads(STATE_FILE.read_text()) if STATE_FILE.exists() else {}
     state.setdefault("days", {}); state.setdefault("xp", 0); state.setdefault("posted", [])
@@ -980,6 +1022,9 @@ def main():
                     tot["agi"][j] += agi
                     tot["str"][j] += lift
         state["board"]["stats"] = tot
+        if not os.environ.get("GAME_TEST_STATS") or os.environ.get("GAME_TEST_SPORTS"):
+            days2 = (today.isoformat(), (today + timedelta(days=1)).isoformat())
+            state["board"]["games"] = [g for g in philly_games(state, now) if g["d"] in days2]
     except Exception as ex:
         print(f"Game: board extras failed ({type(ex).__name__}: {str(ex)[:120]})")
     if not DRY_RUN:
