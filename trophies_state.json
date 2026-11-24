@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-24T21:00:58.406Z",
+ "lastCheck": "2026-11-24T22:00:47.791Z",
  "authWarned": false,
  "lastRecap": "2026-11-22",
  "week": [
@@ -107,14 +107,24 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "gold",
    "at": "2026-11-24T20:56:44Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "platinum",
+   "at": "2026-11-24T21:31:00Z"
+  },
+  {
+   "game": "FINAL FANTASY RESONANCE",
+   "type": "gold",
+   "at": "2026-11-24T21:31:00Z"
   }
  ],
  "lastTrophy": {
   "game": "FINAL FANTASY RESONANCE",
-  "name": "My Name Is Ultima...",
+  "name": "The Harder They Fall",
   "type": "gold",
-  "at": "2026-11-24T20:56:44Z"
+  "at": "2026-11-24T21:31:00Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR58353_00|38|90|2026-11-24T20:56:44Z"
+ "nowPlayingSig": "NPWR58353_00|40|100|2026-11-24T21:31:00Z"
 }
