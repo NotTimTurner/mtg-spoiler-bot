@@ -68,12 +68,12 @@
  "boardHour": "2026-11-24 17",
  "fitbit": {
   "ok": true,
-  "checked": "2026-11-24T17:15-05:00",
-  "today_steps": 2602
+  "checked": "2026-11-24T17:24-05:00",
+  "today_steps": 2769
  },
  "board": {
   "date": "2026-11-24",
-  "asOf": "Tue 5:15 PM",
+  "asOf": "Tue 5:24 PM",
   "testWeek": false,
   "practiceWeek": 0,
   "balance": 4,
@@ -89,8 +89,8 @@
   "levelSpan": 300,
   "nextReward": 10,
   "boss": "\ud83d\udc09 Sat Fat Dragon 1/5",
-  "steps": 2602,
-  "stepsAt": "17:15",
+  "steps": 2769,
+  "stepsAt": "17:24",
   "stepTarget": 10000,
   "fitWalk": false,
   "fitLift": false,
@@ -245,7 +245,21 @@
     0,
     0
    ]
-  }
+  },
+  "games": [
+   {
+    "d": "2026-11-25",
+    "t": "17:00",
+    "label": "Sixers vs MIA",
+    "tv": "ESPN"
+   },
+   {
+    "d": "2026-11-25",
+    "t": "19:00",
+    "label": "Flyers at WSH",
+    "tv": "NBC Sports Phil +"
+   }
+  ]
  },
  "weightLog": {
   "2026-11-09": 212.8,
@@ -283,5 +297,64 @@
    "key": "sat_fat",
    "won": false
   }
- ]
+ ],
+ "sports": {
+  "at": "2026-11-24T17:24-05:00",
+  "games": [
+   {
+    "d": "2026-11-25",
+    "t": "17:00",
+    "label": "Sixers vs MIA",
+    "tv": "ESPN"
+   },
+   {
+    "d": "2026-11-25",
+    "t": "19:00",
+    "label": "Flyers at WSH",
+    "tv": "NBC Sports Phil +"
+   },
+   {
+    "d": "2026-11-26",
+    "t": "16:30",
+    "label": "Eagles at DAL",
+    "tv": "Fox"
+   },
+   {
+    "d": "2026-11-27",
+    "t": "15:00",
+    "label": "Flyers vs VAN",
+    "tv": "NBC Sports Phil"
+   },
+   {
+    "d": "2026-11-27",
+    "t": "19:30",
+    "label": "Sixers at IND",
+    "tv": ""
+   },
+   {
+    "d": "2026-11-28",
+    "t": "19:30",
+    "label": "Flyers vs NYI",
+    "tv": "NBC Sports Phil"
+   },
+   {
+    "d": "2026-11-28",
+    "t": "20:30",
+    "label": "Sixers at HOU",
+    "tv": "NBA TV"
+   },
+   {
+    "d": "2026-11-30",
+    "t": "19:30",
+    "label": "Flyers at TOR",
+    "tv": "NBC Sports Phil"
+   },
+   {
+    "d": "2026-12-01",
+    "t": "19:00",
+    "label": "Sixers vs MEM",
+    "tv": "DAZN MEM"
+   }
+  ]
+ }
 }
