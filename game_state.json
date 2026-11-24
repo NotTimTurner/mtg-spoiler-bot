@@ -1,6 +1,6 @@
 {
  "days": {},
- "xp": 35,
+ "xp": 37,
  "posted": [
   "2026-11-19"
  ],
@@ -16,7 +16,7 @@
  "boardDay": "2026-11-21",
  "todayLine": {
   "date": "2026-11-23",
-  "level": "SD \u00b7 35 XP",
+  "level": "SD \u00b7 37 XP",
   "yesterday": null,
   "workout": "Push (bench day): Bench press 4\u00d76\u20138 \u00b7 DB lateral raise 3\u00d712 \u00b7 DB flyes 3\u00d712 \u00b7 DB lying triceps extension 3\u00d712 \u00b7 Plank 3\u00d730 s",
   "money": "$0 balance",
@@ -40,12 +40,12 @@
  "boardHour": "2026-11-23 22",
  "fitbit": {
   "ok": true,
-  "checked": "2026-11-23T22:00-05:00",
+  "checked": "2026-11-23T22:15-05:00",
   "today_steps": 5373
  },
  "board": {
   "date": "2026-11-23",
-  "asOf": "Mon 10:00 PM",
+  "asOf": "Mon 10:15 PM",
   "testWeek": false,
   "practiceWeek": 0,
   "balance": 0,
@@ -55,14 +55,14 @@
   "owed": 0,
   "due": "",
   "level": "SD",
-  "xp": 35,
+  "xp": 37,
   "next": "HG",
-  "toNext": 265,
+  "toNext": 263,
   "levelSpan": 300,
   "nextReward": 10,
   "boss": "\ud83d\udc09 Sat Fat Dragon 0/5",
   "steps": 5373,
-  "stepsAt": "22:00",
+  "stepsAt": "22:15",
   "stepTarget": 10000,
   "fitWalk": false,
   "fitLift": false,
@@ -211,7 +211,8 @@
    "FINAL FANTASY RESONANCE|bronze|2026-11-23T18:51:40Z": 2,
    "FINAL FANTASY RESONANCE|bronze|2026-11-23T19:19:11Z": 2,
    "FINAL FANTASY RESONANCE|silver|2026-11-23T20:37:41Z": 5,
-   "Grand Theft Auto VI|bronze|2026-11-23T23:52:01Z": 2
+   "Grand Theft Auto VI|bronze|2026-11-23T23:52:01Z": 2,
+   "FINAL FANTASY RESONANCE|bronze|2026-11-24T02:14:39Z": 2
   },
   "builds": {}
  },
