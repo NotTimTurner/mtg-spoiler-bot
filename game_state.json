@@ -11,12 +11,13 @@
     "fiber": false,
     "chol": null,
     "water": null,
-    "steps": false,
+    "steps": null,
     "lift": false,
     "pedal": null,
+    "pills": null,
     "logged": true
    },
-   "sig": "{\"budget\": 1852, \"cal\": 1774, \"carbs\": 152, \"fiber\": 17.4, \"protein\": 155, \"sat_fat\": 14.5, \"steps\": 5410}"
+   "sig": "{\"budget\": 1852, \"cal\": 1774, \"carbs\": 152, \"fiber\": 17.4, \"protein\": 155, \"sat_fat\": 14.5}"
   },
   "2026-11-24": {
    "xp": 70,
@@ -29,13 +30,13 @@
     "fiber": false,
     "chol": null,
     "water": null,
-    "steps": false,
+    "steps": null,
     "lift": false,
     "pedal": null,
     "pills": true,
     "logged": true
    },
-   "sig": "{\"budget\": 1834, \"cal\": 1675, \"carbs\": 135.7, \"fiber\": 25.6, \"pills\": 4, \"protein\": 142, \"sat_fat\": 15.6, \"steps\": 3902}"
+   "sig": "{\"budget\": 1834, \"cal\": 1675, \"carbs\": 135.7, \"fiber\": 25.6, \"pills\": 4, \"protein\": 142, \"sat_fat\": 15.6}"
   }
  },
  "xp": 361,
@@ -99,13 +100,13 @@
  ],
  "boardHour": "2026-11-25 12",
  "fitbit": {
-  "ok": true,
+  "ok": false,
   "checked": "2026-11-25T12:00-05:00",
   "today_steps": 6703
  },
  "board": {
   "date": "2026-11-25",
-  "asOf": "Wed 12:00 PM",
+  "asOf": "Wed 12:15 PM",
   "testWeek": false,
   "practiceWeek": 0,
   "balance": 17,
