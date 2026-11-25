@@ -1,5 +1,5 @@
 {
- "lastCheck": "2026-11-25T22:00:42.453Z",
+ "lastCheck": "2026-11-25T23:00:54.906Z",
  "authWarned": false,
  "lastRecap": "2026-11-22",
  "week": [
@@ -117,14 +117,19 @@
    "game": "FINAL FANTASY RESONANCE",
    "type": "gold",
    "at": "2026-11-24T21:31:00Z"
+  },
+  {
+   "game": "Grand Theft Auto VI",
+   "type": "bronze",
+   "at": "2026-11-25T22:07:19Z"
   }
  ],
  "lastTrophy": {
-  "game": "FINAL FANTASY RESONANCE",
-  "name": "The Harder They Fall",
-  "type": "gold",
-  "at": "2026-11-24T21:31:00Z"
+  "game": "Grand Theft Auto VI",
+  "name": "Trust",
+  "type": "bronze",
+  "at": "2026-11-25T22:07:19Z"
  },
  "nowPlayingId": "1572735736891969698",
- "nowPlayingSig": "NPWR21085_00|3|4|2026-11-24T21:31:00Z"
+ "nowPlayingSig": "NPWR21085_00|4|5|2026-11-25T22:07:19Z"
 }
