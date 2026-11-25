@@ -39,7 +39,7 @@
    "sig": "{\"budget\": 1834, \"cal\": 1675, \"carbs\": 135.7, \"fiber\": 25.6, \"pills\": 4, \"protein\": 142, \"sat_fat\": 15.6, \"steps\": 3902}"
   }
  },
- "xp": 361,
+ "xp": 363,
  "posted": [
   "2026-11-19",
   "2026-11-23",
@@ -57,7 +57,7 @@
  "boardDay": "2026-11-21",
  "todayLine": {
   "date": "2026-11-25",
-  "level": "HG \u00b7 361 XP",
+  "level": "HG \u00b7 363 XP",
   "yesterday": 70,
   "workout": "Legs: DB goblet squat 4\u00d710 \u00b7 Barbell Romanian deadlift 3\u00d78 \u00b7 DB reverse lunge 3\u00d710/leg \u00b7 DB calf raise 3\u00d715 \u00b7 Dead bug 3\u00d710/side",
   "money": "$17 balance",
@@ -102,12 +102,12 @@
  "boardHour": "2026-11-25 18",
  "fitbit": {
   "ok": true,
-  "checked": "2026-11-25T18:00-05:00",
+  "checked": "2026-11-25T18:15-05:00",
   "today_steps": 10146
  },
  "board": {
   "date": "2026-11-25",
-  "asOf": "Wed 6:00 PM",
+  "asOf": "Wed 6:15 PM",
   "testWeek": false,
   "practiceWeek": 0,
   "balance": 17,
@@ -117,14 +117,14 @@
   "owed": 0,
   "due": "",
   "level": "HG",
-  "xp": 361,
+  "xp": 363,
   "next": "RG",
-  "toNext": 539,
+  "toNext": 537,
   "levelSpan": 600,
   "nextReward": 15,
   "boss": "\ud83d\udc09 Sat Fat Dragon 1/5",
   "steps": 10146,
-  "stepsAt": "18:00",
+  "stepsAt": "18:15",
   "stepTarget": 10000,
   "fitWalk": false,
   "fitLift": false,
@@ -326,7 +326,8 @@
    "FINAL FANTASY RESONANCE|silver|2026-11-24T20:00:42Z": 5,
    "FINAL FANTASY RESONANCE|gold|2026-11-24T20:56:44Z": 10,
    "FINAL FANTASY RESONANCE|platinum|2026-11-24T21:31:00Z": 100,
-   "FINAL FANTASY RESONANCE|gold|2026-11-24T21:31:00Z": 10
+   "FINAL FANTASY RESONANCE|gold|2026-11-24T21:31:00Z": 10,
+   "Grand Theft Auto VI|bronze|2026-11-25T22:07:19Z": 2
   },
   "builds": {}
  },
