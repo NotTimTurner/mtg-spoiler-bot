@@ -17,12 +17,32 @@
     "logged": true
    },
    "sig": "{\"budget\": 1852, \"cal\": 1774, \"carbs\": 152, \"fiber\": 17.4, \"protein\": 155, \"sat_fat\": 14.5, \"steps\": 5410}"
+  },
+  "2026-11-24": {
+   "xp": 70,
+   "hits": {
+    "cal": true,
+    "protein": true,
+    "sat_fat": false,
+    "carbs": true,
+    "sugar": null,
+    "fiber": false,
+    "chol": null,
+    "water": null,
+    "steps": false,
+    "lift": false,
+    "pedal": null,
+    "pills": true,
+    "logged": true
+   },
+   "sig": "{\"budget\": 1834, \"cal\": 1675, \"carbs\": 135.7, \"fiber\": 25.6, \"pills\": 4, \"protein\": 142, \"sat_fat\": 15.6, \"steps\": 3902}"
   }
  },
- "xp": 291,
+ "xp": 361,
  "posted": [
   "2026-11-19",
-  "2026-11-23"
+  "2026-11-23",
+  "2026-11-24"
  ],
  "plans": [
   "2026-11-21",
@@ -35,11 +55,11 @@
  "boardId": "1573737384003244195",
  "boardDay": "2026-11-21",
  "todayLine": {
-  "date": "2026-11-24",
-  "level": "SD \u00b7 291 XP",
-  "yesterday": 110,
-  "workout": "Rest day (walk; pedal if under 10k)",
-  "money": "$4 balance",
+  "date": "2026-11-25",
+  "level": "HG \u00b7 361 XP",
+  "yesterday": 70,
+  "workout": "Legs: DB goblet squat 4\u00d710 \u00b7 Barbell Romanian deadlift 3\u00d78 \u00b7 DB reverse lunge 3\u00d710/leg \u00b7 DB calf raise 3\u00d715 \u00b7 Dead bug 3\u00d710/side",
+  "money": "$17 balance",
   "boss": "\ud83d\udc09 Sat Fat Dragon 1/5"
  },
  "guideId": "1573752484277780714",
@@ -49,6 +69,16 @@
    "amount": 4,
    "date": "2026-11-23",
    "note": "missions"
+  },
+  "day:2026-11-24": {
+   "amount": 3,
+   "date": "2026-11-24",
+   "note": "missions"
+  },
+  "level:HG": {
+   "amount": 10,
+   "date": "2026-11-25",
+   "note": "reached HG"
   }
  },
  "practice": {},
@@ -66,41 +96,37 @@
   "2026-11-24|2",
   "2026-11-24|9"
  ],
- "boardHour": "2026-11-24 23",
+ "boardHour": "2026-11-25 00",
  "fitbit": {
   "ok": true,
-  "checked": "2026-11-24T23:45-05:00",
-  "today_steps": 3902
+  "checked": "2026-11-25T00:00-05:00",
+  "today_steps": null
  },
  "board": {
-  "date": "2026-11-24",
-  "asOf": "Tue 11:45 PM",
+  "date": "2026-11-25",
+  "asOf": "Wed 12:00 AM",
   "testWeek": false,
   "practiceWeek": 0,
-  "balance": 4,
-  "week": 4,
-  "yesterday": 4,
+  "balance": 17,
+  "week": 7,
+  "yesterday": 3,
   "busted": false,
   "owed": 0,
   "due": "",
-  "level": "SD",
-  "xp": 291,
-  "next": "HG",
-  "toNext": 9,
-  "levelSpan": 300,
-  "nextReward": 10,
+  "level": "HG",
+  "xp": 361,
+  "next": "RG",
+  "toNext": 539,
+  "levelSpan": 600,
+  "nextReward": 15,
   "boss": "\ud83d\udc09 Sat Fat Dragon 1/5",
-  "steps": 3902,
-  "stepsAt": "23:45",
+  "steps": null,
+  "stepsAt": "00:00",
   "stepTarget": 10000,
   "fitWalk": false,
   "fitLift": false,
-  "pedalMin": 60,
+  "pedalMin": 0,
   "history": [
-   {
-    "d": "2026-10-27",
-    "amt": null
-   },
    {
     "d": "2026-10-28",
     "amt": null
@@ -208,6 +234,10 @@
    {
     "d": "2026-11-23",
     "amt": 4
+   },
+   {
+    "d": "2026-11-24",
+    "amt": 3
    }
   ],
   "weights": [
@@ -229,11 +259,11 @@
    }
   ],
   "streaks": {
-   "log": 1,
-   "cal": 1,
-   "protein": 1,
-   "sat_fat": 1,
-   "carbs": 1,
+   "log": 2,
+   "cal": 2,
+   "protein": 2,
+   "sat_fat": 0,
+   "carbs": 2,
    "fiber": 0,
    "steps": 0
   },
@@ -259,6 +289,12 @@
     "t": "19:00",
     "label": "Flyers at WSH",
     "tv": "NBC Sports Phil +"
+   },
+   {
+    "d": "2026-11-26",
+    "t": "16:30",
+    "label": "Eagles at DAL",
+    "tv": "Fox"
    }
   ]
  },
