@@ -99,12 +99,12 @@
  "boardHour": "2026-11-25 00",
  "fitbit": {
   "ok": true,
-  "checked": "2026-11-25T00:15-05:00",
+  "checked": "2026-11-25T00:30-05:00",
   "today_steps": 0
  },
  "board": {
   "date": "2026-11-25",
-  "asOf": "Wed 12:15 AM",
+  "asOf": "Wed 12:30 AM",
   "testWeek": false,
   "practiceWeek": 0,
   "balance": 17,
@@ -121,7 +121,7 @@
   "nextReward": 15,
   "boss": "\ud83d\udc09 Sat Fat Dragon 1/5",
   "steps": 0,
-  "stepsAt": "00:15",
+  "stepsAt": "00:30",
   "stepTarget": 10000,
   "fitWalk": false,
   "fitLift": false,
