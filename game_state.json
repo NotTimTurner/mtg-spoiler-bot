@@ -184,12 +184,12 @@
  "boardHour": "2026-11-28 05",
  "fitbit": {
   "ok": true,
-  "checked": "2026-11-28T05:15-05:00",
+  "checked": "2026-11-28T05:30-05:00",
   "today_steps": 0
  },
  "board": {
   "date": "2026-11-28",
-  "asOf": "Sat 5:15 AM",
+  "asOf": "Sat 5:30 AM",
   "testWeek": false,
   "practiceWeek": 0,
   "balance": 21,
@@ -206,7 +206,7 @@
   "nextReward": 15,
   "boss": "\ud83d\udc09 Sat Fat Dragon 1/5",
   "steps": 0,
-  "stepsAt": "05:15",
+  "stepsAt": "05:30",
   "stepTarget": 10000,
   "fitWalk": false,
   "fitLift": false,
@@ -418,20 +418,8 @@
   }
  ],
  "sports": {
-  "at": "2026-11-27T23:30-05:00",
+  "at": "2026-11-28T05:30-05:00",
   "games": [
-   {
-    "d": "2026-11-27",
-    "t": "15:00",
-    "label": "Flyers vs VAN",
-    "tv": "NBC Sports Phil"
-   },
-   {
-    "d": "2026-11-27",
-    "t": "19:30",
-    "label": "Sixers at IND",
-    "tv": ""
-   },
    {
     "d": "2026-11-28",
     "t": "19:30",
@@ -467,6 +455,18 @@
     "t": "19:30",
     "label": "Flyers vs NYI",
     "tv": "Disney+"
+   },
+   {
+    "d": "2026-12-04",
+    "t": "19:00",
+    "label": "Sixers at ATL",
+    "tv": "Prime Video"
+   },
+   {
+    "d": "2026-12-05",
+    "t": "20:00",
+    "label": "Flyers at MIN",
+    "tv": "NBC Sports Phil"
    }
   ]
  }
